@@ -43,4 +43,26 @@ class DatabaseManager {
         }
         return bookList
     }
+
+    fun updateReadStatus(bookId: Int, isRead: Boolean) {
+        executeUpdate("UPDATE books SET isRead = ? WHERE id = ?", isRead, bookId)
+    }
+
+    fun updateFavoriteStatus(bookId: Int, isFavorite: Boolean) {
+        executeUpdate("UPDATE books SET isFavorite = ? WHERE id = ?", isFavorite, bookId)
+    }
+
+    private fun executeUpdate(sql: String, value: Boolean, id: Int) {
+        try {
+            DriverManager.getConnection(url, user, password).use { conn ->
+                conn.prepareStatement(sql).use { pstmt ->
+                    pstmt.setBoolean(1, value)
+                    pstmt.setInt(2, id)
+                    pstmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
