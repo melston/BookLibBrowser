@@ -1,11 +1,9 @@
 package org.elsoft.bkdb
 
+// Standard Java/Kotlin for Linux process execution
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -19,9 +17,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-// Standard Java/Kotlin for Linux process execution
-import java.lang.ProcessBuilder
 
 data class EBook(
     val id: Int,
@@ -68,8 +63,6 @@ fun EBookApp() {
             .toSortedMap()
             .mapValues { it.value.sortedBy { it.title } }
     }
-
-
 
     LaunchedEffect(Unit) {
         // We move the work to an IO-optimized thread
@@ -181,7 +174,6 @@ fun BookListItem(
         book.isRead -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         else -> MaterialTheme.colorScheme.surface
     }
-    var isExpanded by remember { mutableStateOf(false) }
 
     ElevatedCard(
         modifier = Modifier
