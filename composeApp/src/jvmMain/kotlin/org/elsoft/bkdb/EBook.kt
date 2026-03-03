@@ -55,7 +55,7 @@ fun EBookApp() {
         if (searchQuery.isBlank()) allBooks.toList()
         else allBooks.filter {
             it.title.contains(searchQuery, ignoreCase = true) ||
-                    it.author.contains(searchQuery, ignoreCase = true)
+            it.author.contains(searchQuery, ignoreCase = true)
         }
     }
     // 2. Derive your Tab data from the FILTERED list
@@ -144,7 +144,7 @@ fun EBookApp() {
             Box(modifier = Modifier.padding(padding)) {
                 when (selectedTab) {
                     is LibraryTab.ByTitle -> TitleListView(
-                        allBooks,
+                        filteredBooks,
                         onToggleRead = toggleRead,
                         onToggleFavorite = toggleFavorite,
                         onEditDescription = onEditDescription
