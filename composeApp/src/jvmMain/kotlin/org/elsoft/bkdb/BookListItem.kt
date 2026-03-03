@@ -1,28 +1,12 @@
 package org.elsoft.bkdb
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +29,7 @@ fun BookListItem(
     }
 
     ElevatedCard(
-        modifier = Modifier.Companion
+        modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
     ) {
@@ -89,7 +73,7 @@ fun BookListItem(
 
                 // TRAILING: Favorite toggle and Open action
                 trailingContent = {
-                    Row(verticalAlignment = Alignment.Companion.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         // Favorite Toggle (using an IconToggleButton for a cleaner look)
                         IconToggleButton(
                             checked = book.isFavorite,
@@ -98,16 +82,16 @@ fun BookListItem(
                             Icon(
                                 imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = "Favorite",
-                                tint = if (book.isFavorite) Color.Companion.Green else LocalContentColor.current
+                                tint = if (book.isFavorite) Color.Green else LocalContentColor.current
                             )
                         }
 
-                        VerticalDivider(modifier = Modifier.Companion.height(24.dp).padding(horizontal = 8.dp))
+                        VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 8.dp))
 
                         Text(
                             text = "OPEN",
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.Companion
+                            modifier = Modifier
                                 .clickable { openInOkular(book.filePath) }
                                 .padding(8.dp)
                         )

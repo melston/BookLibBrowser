@@ -1,7 +1,6 @@
 package org.elsoft.bkdb
 
 import java.sql.DriverManager
-import java.sql.Connection
 
 class DatabaseManager {
     private val url = "jdbc:mysql://localhost:3306/bookdb"
