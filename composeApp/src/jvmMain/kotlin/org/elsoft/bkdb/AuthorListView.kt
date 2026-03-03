@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
 fun AuthorListView(
     groupedBooks: Map<String, List<EBook>>,
     onToggleRead: (EBook, Boolean) -> Unit,
-    onToggleFavorite: (EBook, Boolean) -> Unit
+    onToggleFavorite: (EBook, Boolean) -> Unit,
+    onEditDescription: (EBook) -> Unit
 ) {
 
     // Track which authors are expanded
@@ -99,7 +100,8 @@ fun AuthorListView(
                                 BookListItem(
                                     book,
                                     onToggleRead = { newValue -> onToggleRead(book, newValue) },
-                                    onToggleFavorite = { newValue -> onToggleFavorite(book, newValue) }
+                                    onToggleFavorite = { newValue -> onToggleFavorite(book, newValue) },
+                                    onEditDescription = onEditDescription
                                 )
                             }
                         }

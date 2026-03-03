@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
 fun TitleListView(
         books: List<EBook>,
         onToggleRead: (EBook, Boolean) -> Unit,
-        onToggleFavorite: (EBook, Boolean) -> Unit
+        onToggleFavorite: (EBook, Boolean) -> Unit,
+        onEditDescription: (EBook) -> Unit
 ) {
     // 1. Create the shared scroll state
     val state = rememberLazyListState()
@@ -46,7 +47,8 @@ fun TitleListView(
                 BookListItem(
                     book,
                     onToggleRead = { newValue -> onToggleRead(book, newValue) },
-                    onToggleFavorite = { newValue -> onToggleFavorite(book, newValue) }
+                    onToggleFavorite = { newValue -> onToggleFavorite(book, newValue) },
+                    onEditDescription = onEditDescription
                 )
             }
         }

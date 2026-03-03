@@ -1,18 +1,13 @@
 package org.elsoft.bkdb
 
 // Standard Java/Kotlin for Linux process execution
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,6 +41,12 @@ fun EBookApp() {
 
     // As this changes, the filtered and grouped state values change as well.
     var searchQuery by remember { mutableStateOf("") }
+
+    // The book currently being edited (null means dialog is closed)
+    var editingBook by remember { mutableStateOf<EBook?>(null) }
+    val onEditDescription: (EBook) -> Unit = { book ->
+        editingBook = book
+    }
 
     // This state value never changes.
     val allBooks = remember { mutableStateListOf<EBook>() }
@@ -82,6 +83,17 @@ fun EBookApp() {
             allBooks[index] = allBooks[index].copy(isFavorite = newValue)
             scope.launch(Dispatchers.IO) {
                 db.updateFavoriteStatus(book.id, newValue)
+            }
+        }
+    }
+
+    val updateDescription: (EBook, String?) -> Unit = { book, newDesc ->
+        val index = allBooks.indexOfFirst { it.id == book.id }
+        if (index != -1) {
+            // Optimistic UI update
+            allBooks[index] = allBooks[index].copy(description = newDesc)
+            scope.launch(Dispatchers.IO) {
+                db.updateDescription(book.id, newDesc)
             }
         }
     }
@@ -134,93 +146,28 @@ fun EBookApp() {
                     is LibraryTab.ByTitle -> TitleListView(
                         allBooks,
                         onToggleRead = toggleRead,
-                        onToggleFavorite = toggleFavorite
+                        onToggleFavorite = toggleFavorite,
+                        onEditDescription = onEditDescription
                     )
                     is LibraryTab.ByAuthor -> AuthorListView(
                         groupedByAuthor,
                         onToggleRead = toggleRead,
-                        onToggleFavorite = toggleFavorite
+                        onToggleFavorite = toggleFavorite,
+                        onEditDescription = onEditDescription
+                    )
+                }
+
+                if (editingBook != null) {
+                    DescriptionEditDialog(
+                        book = editingBook!!,
+                        onDismiss = { editingBook = null },
+                        onConfirm = { newDesc ->
+                            updateDescription(editingBook!!, newDesc)
+                            editingBook = null
+                        }
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun BookListItem(
-        book: EBook,
-        onToggleRead: (Boolean) -> Unit,
-        onToggleFavorite: (Boolean) -> Unit
-) {
-    // Define background color based on status
-    val backgroundColor = when {
-        book.isFavorite && book.isRead -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        book.isFavorite -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-        book.isRead -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        else -> MaterialTheme.colorScheme.surface
-    }
-
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-    ) {
-        Surface(color = backgroundColor) {
-            ListItem(
-                // LEADING: The "Read" Status
-                leadingContent = {
-                    Checkbox(
-                        checked = book.isRead,
-                        onCheckedChange = { onToggleRead(it) }
-                    )
-                },
-
-                // HEADLINE: Title
-                headlineContent = { Text(book.title) },
-
-                // SUPPORTING: Author and persistent description
-                supportingContent = {
-                    Column {
-                        Text(book.author, style = MaterialTheme.typography.bodyMedium)
-                        if (!book.description.isNullOrBlank()) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = book.description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-
-                // TRAILING: Favorite toggle and Open action
-                trailingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Favorite Toggle (using an IconToggleButton for a cleaner look)
-                        IconToggleButton(
-                            checked = book.isFavorite,
-                            onCheckedChange = { onToggleFavorite(it) }
-                        ) {
-                            Icon(
-                                imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = if (book.isFavorite) Color.Green else LocalContentColor.current
-                            )
-                        }
-
-                        VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 8.dp))
-
-                        Text(
-                            text = "OPEN",
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clickable { openInOkular(book.filePath) }
-                                .padding(8.dp)
-                        )
-                    }
-                }
-            )
         }
     }
 }

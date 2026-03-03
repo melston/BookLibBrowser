@@ -52,6 +52,22 @@ class DatabaseManager {
         executeUpdate("UPDATE books SET isFavorite = ? WHERE id = ?", isFavorite, bookId)
     }
 
+    fun updateDescription(bookId: Int, newDescription: String?) {
+        try {
+            DriverManager.getConnection(url, user, password).use { conn ->
+                val sql = "UPDATE books SET description = ? WHERE id = ?"
+                conn.prepareStatement(sql).use { pstmt ->
+                    // MySQL handles nulls correctly if passed via setString
+                    pstmt.setString(1, newDescription)
+                    pstmt.setInt(2, bookId)
+                    pstmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun executeUpdate(sql: String, value: Boolean, id: Int) {
         try {
             DriverManager.getConnection(url, user, password).use { conn ->
