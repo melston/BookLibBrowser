@@ -64,6 +64,28 @@ fun EBookApp() {
             .mapValues { it.value.sortedBy { it.title } }
     }
 
+    // Define the shared "Read" logic
+    val toggleRead: (EBook, Boolean) -> Unit = { book, newValue ->
+        val index = allBooks.indexOfFirst { it.id == book.id }
+        if (index != -1) {
+            allBooks[index] = allBooks[index].copy(isRead = newValue)
+            scope.launch(Dispatchers.IO) {
+                db.updateReadStatus(book.id, newValue)
+            }
+        }
+    }
+
+    // Define the shared "Favorite" logic
+    val toggleFavorite: (EBook, Boolean) -> Unit = { book, newValue ->
+        val index = allBooks.indexOfFirst { it.id == book.id }
+        if (index != -1) {
+            allBooks[index] = allBooks[index].copy(isFavorite = newValue)
+            scope.launch(Dispatchers.IO) {
+                db.updateFavoriteStatus(book.id, newValue)
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         // We move the work to an IO-optimized thread
         withContext(Dispatchers.IO) {
@@ -111,49 +133,13 @@ fun EBookApp() {
                 when (selectedTab) {
                     is LibraryTab.ByTitle -> TitleListView(
                         allBooks,
-                        onToggleRead = { book: EBook, newValue: Boolean ->
-                            val index = allBooks.indexOfFirst { it.id == book.id }
-                            if (index != -1) {
-                                allBooks[index] = book.copy(isRead = newValue)
-                            }
-
-                            scope.launch(Dispatchers.IO) {
-                                db.updateReadStatus(book.id, newValue)
-                            }
-                        },
-                        onToggleFavorite = { book: EBook, newValue: Boolean ->
-                            val index = allBooks.indexOfFirst { it.id == book.id }
-                            if (index != -1) {
-                                allBooks[index] = book.copy(isFavorite = newValue)
-                            }
-
-                            scope.launch(Dispatchers.IO) {
-                                db.updateFavoriteStatus(book.id, newValue)
-                            }
-                        }
+                        onToggleRead = toggleRead,
+                        onToggleFavorite = toggleFavorite
                     )
                     is LibraryTab.ByAuthor -> AuthorListView(
                         groupedByAuthor,
-                        onToggleRead = { book: EBook, newValue: Boolean ->
-                            val index = allBooks.indexOfFirst { it.id == book.id }
-                            if (index != -1) {
-                                allBooks[index] = book.copy(isRead = newValue)
-                            }
-
-                            scope.launch(Dispatchers.IO) {
-                                db.updateReadStatus(book.id, newValue)
-                            }
-                        },
-                        onToggleFavorite = { book: EBook, newValue: Boolean ->
-                            val index = allBooks.indexOfFirst { it.id == book.id }
-                            if (index != -1) {
-                                allBooks[index] = book.copy(isFavorite = newValue)
-                            }
-
-                            scope.launch(Dispatchers.IO) {
-                                db.updateFavoriteStatus(book.id, newValue)
-                            }
-                        }
+                        onToggleRead = toggleRead,
+                        onToggleFavorite = toggleFavorite
                     )
                 }
             }
