@@ -2,10 +2,23 @@ package org.elsoft.bkdb
 
 import java.sql.DriverManager
 
+
 class DatabaseManager {
     private val url = ConfigManager.get("db.url")
     private val user = ConfigManager.get("db.user")
     private val pass = ConfigManager.get("db.password")
+
+    companion object {
+        fun testConnection(url: String, user: String, pass: String): Boolean {
+            return try {
+                DriverManager.getConnection(url, user, pass).use { it.isValid(2) }
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+    }
 
     fun fetchBooks(): List<EBook> {
         val bookList = mutableListOf<EBook>()
