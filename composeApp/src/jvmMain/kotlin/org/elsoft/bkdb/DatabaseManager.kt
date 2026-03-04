@@ -3,14 +3,14 @@ package org.elsoft.bkdb
 import java.sql.DriverManager
 
 class DatabaseManager {
-    private val url = "jdbc:mysql://localhost:3306/bookdb"
-    private val user = "mark"
-    private val password = "ThePigeonRiverFlooded595"
+    private val url = ConfigManager.get("db.url")
+    private val user = ConfigManager.get("db.user")
+    private val pass = ConfigManager.get("db.password")
 
     fun fetchBooks(): List<EBook> {
         val bookList = mutableListOf<EBook>()
         try {
-            DriverManager.getConnection(url, user, password).use { conn ->
+            DriverManager.getConnection(url, user, pass).use { conn ->
                 val query = "SELECT * FROM books ORDER BY title ASC"
                 val statement = conn.createStatement()
                 val resultSet = statement.executeQuery(query)
@@ -53,7 +53,7 @@ class DatabaseManager {
 
     fun updateDescription(bookId: Int, newDescription: String?) {
         try {
-            DriverManager.getConnection(url, user, password).use { conn ->
+            DriverManager.getConnection(url, user, pass).use { conn ->
                 val sql = "UPDATE books SET description = ? WHERE id = ?"
                 conn.prepareStatement(sql).use { pstmt ->
                     // MySQL handles nulls correctly if passed via setString
@@ -69,7 +69,7 @@ class DatabaseManager {
 
     private fun executeUpdate(sql: String, value: Boolean, id: Int) {
         try {
-            DriverManager.getConnection(url, user, password).use { conn ->
+            DriverManager.getConnection(url, user, pass).use { conn ->
                 conn.prepareStatement(sql).use { pstmt ->
                     pstmt.setBoolean(1, value)
                     pstmt.setInt(2, id)

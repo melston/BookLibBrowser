@@ -42,8 +42,26 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.elsoft.bkdb"
+            packageName = "ebook-lib-browser"
             packageVersion = "1.0.0"
+            description = "Ebook Library Browser"
+            copyright = "@ 2026 Mark Elston"
+            vendor = "Mark Elston"
+
+            modules(
+                "java.instrument",
+                "java.sql",
+                "jdk.unsupported",
+                "java.naming",
+                "java.desktop"
+            )
+
+            linux {
+                // This creates a shortcut in the Ubuntu app list
+                shortcut = true
+                // Point to an .png or .icns file for the sidebar icon
+                iconFile.set(project.file("src/jvmMain/resources/books.png"))
+            }
         }
     }
 }
