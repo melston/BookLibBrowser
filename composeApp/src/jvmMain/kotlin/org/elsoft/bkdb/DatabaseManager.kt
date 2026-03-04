@@ -13,7 +13,7 @@ class DatabaseManager {
             return try {
                 DriverManager.getConnection(url, user, pass).use { it.isValid(2) }
                 true
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
         }

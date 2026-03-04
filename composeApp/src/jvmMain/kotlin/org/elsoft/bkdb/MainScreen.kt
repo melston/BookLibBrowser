@@ -120,7 +120,7 @@ fun MainScreen() {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        modifier = Modifier.Companion.fillMaxWidth().padding(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(8.dp),
                         placeholder = { Text("Search by title or author...") },
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         trailingIcon = {
@@ -143,7 +143,7 @@ fun MainScreen() {
                 }
             }
         ) { padding ->
-            Box(modifier = Modifier.Companion.padding(padding)) {
+            Box(modifier = Modifier.padding(padding)) {
                 when (selectedTab) {
                     is LibraryTab.ByTitle -> TitleListView(
                         filteredBooks,
