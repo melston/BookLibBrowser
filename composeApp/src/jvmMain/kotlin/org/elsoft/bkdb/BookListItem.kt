@@ -12,14 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun BookListItem(
-        book: EBook,
-        onToggleRead: (Boolean) -> Unit,
-        onToggleFavorite: (Boolean) -> Unit,
-        onEditDescription: (EBook) -> Unit
-) {
+fun BookListItem(book: EBook) {
     // Define background color based on status
     val backgroundColor = when {
         book.isFavorite && book.isRead -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -27,6 +23,7 @@ fun BookListItem(
         book.isRead -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         else -> MaterialTheme.colorScheme.surface
     }
+    val vm = viewModel<EBookViewModel>()
 
     ElevatedCard(
         modifier = Modifier
@@ -39,7 +36,7 @@ fun BookListItem(
                 leadingContent = {
                     Checkbox(
                         checked = book.isRead,
-                        onCheckedChange = { onToggleRead(it) }
+                        onCheckedChange = { vm.setRead(book, it) }
                     )
                 },
 
@@ -60,7 +57,7 @@ fun BookListItem(
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            IconButton(onClick = { onEditDescription(book) }) {
+                            IconButton(onClick = { vm.startEditing(book) }) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = "Edit Description",
@@ -77,7 +74,7 @@ fun BookListItem(
                         // Favorite Toggle (using an IconToggleButton for a cleaner look)
                         IconToggleButton(
                             checked = book.isFavorite,
-                            onCheckedChange = { onToggleFavorite(it) }
+                            onCheckedChange = { vm.setFavorite(book, it, ) }
                         ) {
                             Icon(
                                 imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -92,7 +89,7 @@ fun BookListItem(
                             text = "OPEN",
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .clickable { openInOkular(book.filePath) }
+                                .clickable { vm.openBook(book)}
                                 .padding(8.dp)
                         )
                     }

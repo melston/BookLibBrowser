@@ -1,6 +1,7 @@
 [versions]
 androidx-lifecycle = "2.8.4"
 composeMultiplatform = "1.7.3"
+dropbox-sdk = "7.0.0"
 junit = "4.13.2"
 kotlin = "2.1.0"
 kotlinx-coroutines = "1.9.0"
@@ -20,6 +21,8 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "composeMultiplatform" }
+
+dropbox = { module = "com.dropbox.core:dropbox-core-sdk", version.ref = "dropbox-sdk" }
 
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 mysql-connector = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql" }

@@ -15,20 +15,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun AuthorListView(
-    groupedBooks: Map<String, List<EBook>>,
-    onToggleRead: (EBook, Boolean) -> Unit,
-    onToggleFavorite: (EBook, Boolean) -> Unit,
-    onEditDescription: (EBook) -> Unit
-) {
+fun AuthorListView() {
 
     // Track which authors are expanded
     val expandedAuthors = remember { mutableStateMapOf<String, Boolean>() }
     val state = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val vm = viewModel<EBookViewModel>()
+    val groupedBooks by vm.booksByAuthor.collectAsState()
 
     val alphabet = ('A'..'Z').toList()
     // Calculate this once whenever groupedBooks changes
@@ -97,12 +95,7 @@ fun AuthorListView(
                     if (isExpanded) {
                         items(authorBooks) { book ->
                             Box(modifier = Modifier.padding(start = 32.dp, end = 8.dp, top = 2.dp, bottom = 2.dp)) {
-                                BookListItem(
-                                    book,
-                                    onToggleRead = { newValue -> onToggleRead(book, newValue) },
-                                    onToggleFavorite = { newValue -> onToggleFavorite(book, newValue) },
-                                    onEditDescription = onEditDescription
-                                )
+                                BookListItem(book)
                             }
                         }
                     }

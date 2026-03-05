@@ -4,9 +4,9 @@ import java.sql.DriverManager
 
 
 class DatabaseManager {
-    private val url = ConfigManager.get("db.url")
-    private val user = ConfigManager.get("db.user")
-    private val pass = ConfigManager.get("db.password")
+    private val url = ConfigManager.get(ConfigManager.db_url)
+    private val user = ConfigManager.get(ConfigManager.db_user)
+    private val pass = ConfigManager.get(ConfigManager.db_password)
 
     companion object {
         fun testConnection(url: String, user: String, pass: String): Boolean {

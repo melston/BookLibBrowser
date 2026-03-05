@@ -16,18 +16,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun TitleListView(
-        books: List<EBook>,
-        onToggleRead: (EBook, Boolean) -> Unit,
-        onToggleFavorite: (EBook, Boolean) -> Unit,
-        onEditDescription: (EBook) -> Unit
-) {
+fun TitleListView() {
     // 1. Create the shared scroll state
     val state = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val vm = viewModel<EBookViewModel>()
+    val books by vm.filteredBooks.collectAsState(initial = emptyList())
 
     val showButton by remember {
         derivedStateOf {
@@ -44,12 +42,7 @@ fun TitleListView(
                 .padding(end = 12.dp) // Leave room for the bar
         ) {
             items(books, key = { it.id }) { book ->
-                BookListItem(
-                    book,
-                    onToggleRead = { newValue -> onToggleRead(book, newValue) },
-                    onToggleFavorite = { newValue -> onToggleFavorite(book, newValue) },
-                    onEditDescription = onEditDescription
-                )
+                BookListItem(book)
             }
         }
 

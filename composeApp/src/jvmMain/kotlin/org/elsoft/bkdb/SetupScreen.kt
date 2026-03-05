@@ -7,18 +7,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
 fun SetupScreen(onConfigSaved: () -> Unit) {
-    val snackbarHostState = remember { SnackbarHostState() }
+    val viewModel = viewModel<EBookViewModel>()
+    val snackbarHostState = viewModel.snackbarHostState
     val scope = rememberCoroutineScope()
 
     var url by remember { mutableStateOf("jdbc:mysql://localhost:3306/bookdb") }
     var user by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
+    var viewer by remember { mutableStateOf("") }
+    var dropboxToken by remember { mutableStateOf("") }
     var isTesting by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -42,13 +46,23 @@ fun SetupScreen(onConfigSaved: () -> Unit) {
             OutlinedTextField(
                 value = user,
                 onValueChange = { user = it },
-                label = { Text("Username") }
+                label = { Text("DB Username") }
             )
             OutlinedTextField(
                 value = pass,
                 onValueChange = { pass = it },
-                label = { Text("Password") },
+                label = { Text("DB Password") },
                 visualTransformation = PasswordVisualTransformation() // Hides characters
+            )
+            OutlinedTextField(
+                value = viewer,
+                onValueChange = { viewer = it },
+                label = { Text("Viewer Application") }
+            )
+            OutlinedTextField(
+                value = dropboxToken,
+                onValueChange = { dropboxToken = it },
+                label = { Text("Dropbox Token") }
             )
 
             Spacer(Modifier.height(24.dp))
@@ -62,7 +76,7 @@ fun SetupScreen(onConfigSaved: () -> Unit) {
                         }
 
                         if (success) {
-                            ConfigManager.saveConfig(url, user, pass)
+                            ConfigManager.saveConfig(url, user, pass, viewer, dropboxToken)
                             onConfigSaved()
                         } else {
                             isTesting = false

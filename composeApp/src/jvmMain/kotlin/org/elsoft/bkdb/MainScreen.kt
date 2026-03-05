@@ -1,135 +1,87 @@
 package org.elsoft.bkdb
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+sealed class LibraryTab(val title: String) {
+    data object ByTitle : LibraryTab("By Title")
+    data object ByAuthor : LibraryTab("By Author")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    val db = remember { DatabaseManager() }
-    val scope = rememberCoroutineScope()
     val tabs = listOf(LibraryTab.ByTitle, LibraryTab.ByAuthor)
+    val vm = viewModel<EBookViewModel>()
+    val stats by vm.libraryStats.collectAsState()
 
     // Initial tab
     var selectedTab by remember { mutableStateOf<LibraryTab>(LibraryTab.ByTitle) }
-
-    // As this changes, the filtered and grouped state values change as well.
-    var searchQuery by remember { mutableStateOf("") }
-
-    // The book currently being edited (null means dialog is closed)
-    var editingBook by remember { mutableStateOf<EBook?>(null) }
-    val onEditDescription: (EBook) -> Unit = { book ->
-        editingBook = book
-    }
-
-    // This state value never changes.
-    val allBooks = remember { mutableStateListOf<EBook>() }
-    // 1. Filter the raw data first
-    val filteredBooks = remember(allBooks.toList(), searchQuery) {
-        if (searchQuery.isBlank()) allBooks.toList()
-        else allBooks.filter {
-            it.title.contains(searchQuery, ignoreCase = true) ||
-                    it.author.contains(searchQuery, ignoreCase = true)
-        }
-    }
-    // 2. Derive your Tab data from the FILTERED list
-    val groupedByAuthor = remember(filteredBooks) {
-        filteredBooks.groupBy { it.author }
-            .toSortedMap()
-            .mapValues { it.value.sortedBy { it.title } }
-    }
-
-    // Define the shared "Read" logic
-    val toggleRead: (EBook, Boolean) -> Unit = { book, newValue ->
-        val index = allBooks.indexOfFirst { it.id == book.id }
-        if (index != -1) {
-            allBooks[index] = allBooks[index].copy(isRead = newValue)
-            scope.launch(Dispatchers.IO) {
-                db.updateReadStatus(book.id, newValue)
-            }
-        }
-    }
-
-    // Define the shared "Favorite" logic
-    val toggleFavorite: (EBook, Boolean) -> Unit = { book, newValue ->
-        val index = allBooks.indexOfFirst { it.id == book.id }
-        if (index != -1) {
-            allBooks[index] = allBooks[index].copy(isFavorite = newValue)
-            scope.launch(Dispatchers.IO) {
-                db.updateFavoriteStatus(book.id, newValue)
-            }
-        }
-    }
-
-    val updateDescription: (EBook, String?) -> Unit = { book, newDesc ->
-        val index = allBooks.indexOfFirst { it.id == book.id }
-        if (index != -1) {
-            // Optimistic UI update
-            allBooks[index] = allBooks[index].copy(description = newDesc)
-            scope.launch(Dispatchers.IO) {
-                db.updateDescription(book.id, newDesc)
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        // We move the work to an IO-optimized thread
-        withContext(Dispatchers.IO) {
-            val data = db.fetchBooks()
-            // Switch back to the Main thread to update the UI
-            withContext(Dispatchers.Main) {
-                allBooks.clear()
-                allBooks.addAll(data)
-            }
-        }
-    }
 
     MaterialTheme {
         Scaffold(
             topBar = {
                 Column {
-                    TopAppBar(title = { Text("My Linux Library") })
+                    TopAppBar(
+                        title = { Text("My Linux Library") },
+                        actions = {
+                            // A simple icon button to cycle through filters
+                            IconButton(onClick = {
+                                vm.readFilter = when(vm.readFilter) {
+                                    ReadFilter.ALL -> ReadFilter.UNREAD
+                                    ReadFilter.UNREAD -> ReadFilter.READ
+                                    ReadFilter.READ -> ReadFilter.ALL
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = when(vm.readFilter) {
+                                        ReadFilter.ALL -> Icons.AutoMirrored.Filled.List
+                                        ReadFilter.UNREAD -> Icons.Default.RadioButtonUnchecked
+                                        ReadFilter.READ -> Icons.Default.CheckCircle
+                                    },
+                                    contentDescription = "Filter by read status",
+                                    tint = if (vm.readFilter == ReadFilter.ALL) LocalContentColor.current
+                                           else MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    )
                     OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                        value = vm.searchQuery,
+                        onValueChange = { vm.searchQuery = it },
                         modifier = Modifier.fillMaxWidth().padding(8.dp),
                         placeholder = { Text("Search by title or author...") },
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
+                            if (vm.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { vm.searchQuery = "" }) {
                                     Icon(Icons.Default.Close, null)
                                 }
                             }
-                        }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
                     TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
                         tabs.forEach { tab ->
@@ -141,32 +93,48 @@ fun MainScreen() {
                         }
                     }
                 }
-            }
+            },
+            bottomBar = {
+                BottomAppBar(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    modifier = Modifier.height(48.dp) // Slimmer than a standard bottom bar
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stats,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        // Optional: A "Refresh" button if you've added new files to Dropbox/DB
+                        IconButton(onClick = { vm.refreshBooks() }) {
+                            Icon(Icons.Default.Refresh,
+                                contentDescription = "Refresh Library",
+                                modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            },
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
                 when (selectedTab) {
-                    is LibraryTab.ByTitle -> TitleListView(
-                        filteredBooks,
-                        onToggleRead = toggleRead,
-                        onToggleFavorite = toggleFavorite,
-                        onEditDescription = onEditDescription
-                    )
+                    is LibraryTab.ByTitle -> TitleListView()
 
-                    is LibraryTab.ByAuthor -> AuthorListView(
-                        groupedByAuthor,
-                        onToggleRead = toggleRead,
-                        onToggleFavorite = toggleFavorite,
-                        onEditDescription = onEditDescription
-                    )
+                    is LibraryTab.ByAuthor -> AuthorListView()
                 }
 
-                if (editingBook != null) {
+                if (vm.editingBook != null) {
                     DescriptionEditDialog(
-                        book = editingBook!!,
-                        onDismiss = { editingBook = null },
+                        book = vm.editingBook!!,
+                        onDismiss = { vm.stopEditing() },
                         onConfirm = { newDesc ->
-                            updateDescription(editingBook!!, newDesc)
-                            editingBook = null
+                            vm.updateDescription(vm.editingBook!!, newDesc)
+                            vm.stopEditing()
                         }
                     )
                 }

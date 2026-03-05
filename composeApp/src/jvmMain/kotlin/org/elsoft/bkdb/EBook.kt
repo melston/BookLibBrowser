@@ -3,6 +3,7 @@ package org.elsoft.bkdb
 // Standard Java/Kotlin for Linux process execution
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import java.io.File
 
 data class EBook(
     val id: Int,
@@ -14,11 +15,6 @@ data class EBook(
     val isFavorite: Boolean,
     val description: String?,
 )
-
-sealed class LibraryTab(val title: String) {
-    data object ByTitle : LibraryTab("By Title")
-    data object ByAuthor : LibraryTab("By Author")
-}
 
 @Composable
 fun EBookApp() {
@@ -34,11 +30,39 @@ fun EBookApp() {
     }
 }
 
-fun openInOkular(filePath: String) {
-    try {
-        // This launches the Linux process 'okular' with the file path as an argument
-        ProcessBuilder("okular", filePath).start()
+
+suspend fun openEBook(filePath: String): Result<Unit> {
+    val customCommand = ConfigManager.get(ConfigManager.viewer_command, "")
+
+    return try {
+        val localPath = if (filePath.startsWith("dropbox:")) {
+            val tpath = filePath.substringAfter(":")
+            val uniqueCacheName = cacheName(tpath)
+            DropboxService.download(tpath, uniqueCacheName)
+        } else {
+            filePath
+        }
+
+        val bookFile = File(localPath)
+        if (!bookFile.exists()) {
+            return Result.failure(Exception("File not found at $localPath"))
+        }
+
+        Platform.openFile(bookFile, customCommand)
     } catch (e: Exception) {
-        println("Could not launch Okular. Is it installed? Error: ${e.message}")
+        Result.failure(e)
     }
 }
+
+fun cacheName(filename: String): String {
+    // Extract the filename from the dropbox path to keep the extension correct
+    val modifiedFileName =
+        filename
+            .substringAfterLast("/")
+            .replace(" ", "_")
+    // Use a sanitized version of the path or a book ID to keep the cache file unique
+    val uniqueCacheName = "book_${filename.hashCode()}_$modifiedFileName"
+
+    return uniqueCacheName
+}
+
