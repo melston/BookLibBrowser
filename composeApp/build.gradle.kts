@@ -60,6 +60,10 @@ compose.desktop {
                 "java.desktop"
             )
 
+            // This helps include standard library parts often missed by
+            // reflection-heavy libraries like Gson
+            includeAllModules = false
+
             linux {
                 // This creates a shortcut in the Ubuntu app list
                 shortcut = true
@@ -68,9 +72,20 @@ compose.desktop {
             }
             windows {
                 shortcut = true
-                menuGroup = "EBook Library"
-                // This ensures it puts it in a sensible place in the Start Menu
+                menuGroup = "EBook Library Browser"
+                // upgradeUuid is vital for updates (prevents double-installing)
                 upgradeUuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+                // Windows requires an .ico file specifically.
+                // You can convert your books.png to books.ico online or via GIMP.
+                iconFile.set(project.file("src/jvmMain/resources/books.png"))
+
+                // This puts the app in "Add/Remove Programs" correctly
+                dirChooser = true
+                perUserInstall = true // Set to true if you don't have Admin rights on the work laptop
+
+                // Optional: If you want a specific splash screen on Windows startup
+                // bitmapEditor = project.file("src/jvmMain/resources/splash.bmp")
             }
         }
     }

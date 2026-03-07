@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -41,6 +42,7 @@ fun MainScreen() {
     val vm = viewModel<EBookViewModel>()
     val stats by vm.libraryStats.collectAsState()
     val online by vm.isOnline.collectAsState()
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     // Initial tab
     var selectedTab by remember { mutableStateOf<LibraryTab>(LibraryTab.ByTitle) }
@@ -50,27 +52,41 @@ fun MainScreen() {
             topBar = {
                 Column {
                     TopAppBar(
-                        title = { Text("My Linux Library") },
+                        title = { Text("EBook Library Browser") },
                         actions = {
-                            // A simple icon button to cycle through filters
-                            IconButton(onClick = {
-                                vm.readFilter = when(vm.readFilter) {
-                                    ReadFilter.ALL -> ReadFilter.UNREAD
-                                    ReadFilter.UNREAD -> ReadFilter.READ
-                                    ReadFilter.READ -> ReadFilter.ALL
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = when(vm.readFilter) {
-                                        ReadFilter.ALL -> Icons.AutoMirrored.Filled.List
-                                        ReadFilter.UNREAD -> Icons.Default.RadioButtonUnchecked
-                                        ReadFilter.READ -> Icons.Default.CheckCircle
-                                    },
-                                    contentDescription = "Filter by read status",
-                                    tint = if (vm.readFilter == ReadFilter.ALL) LocalContentColor.current
-                                           else MaterialTheme.colorScheme.primary
-                                )
+                            val filterTooltip = when(vm.readFilter) {
+                                ReadFilter.ALL -> "Currently showing All (Click for Unread)"
+                                ReadFilter.UNREAD -> "Currently showing Unread (Click for Read)"
+                                ReadFilter.READ -> "Currently showing Read (Click for All)"
                             }
+                            WithTooltip(filterTooltip) {
+                                // A simple icon button to cycle through filters
+                                IconButton(onClick = {
+                                    vm.readFilter = when(vm.readFilter) {
+                                        ReadFilter.ALL -> ReadFilter.UNREAD
+                                        ReadFilter.UNREAD -> ReadFilter.READ
+                                        ReadFilter.READ -> ReadFilter.ALL
+                                    }
+                                }) {
+                                    Icon(
+                                        imageVector = when(vm.readFilter) {
+                                            ReadFilter.ALL -> Icons.AutoMirrored.Filled.List
+                                            ReadFilter.UNREAD -> Icons.Default.RadioButtonUnchecked
+                                            ReadFilter.READ -> Icons.Default.CheckCircle
+                                        },
+                                        contentDescription = "Filter by read status",
+                                        tint = if (vm.readFilter == ReadFilter.ALL) LocalContentColor.current
+                                        else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            // Info Button with Tooltip
+                            ActionIconButton(
+                                onClick = { showAboutDialog = true },
+                                icon = Icons.Default.Info,
+                                tooltipText = "About Ebook Library"
+                            )
                         }
                     )
                     OutlinedTextField(
@@ -134,22 +150,28 @@ fun MainScreen() {
                             )
                         }
 
-                        Icon(
-                            imageVector =
-                                if (online) Icons.Default.CloudDone
-                                else Icons.Default.CloudOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = if (online) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        val onlineTooltip = when(online) {
+                            true -> "Online"
+                            false -> "Offline"
+                        }
+                        WithTooltip(onlineTooltip) {
+                            Icon(
+                                imageVector =
+                                    if (online) Icons.Default.CloudDone
+                                    else Icons.Default.CloudOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = if (online) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
 
                         // A "Refresh" button if you've added new files to Dropbox/DB
-                        IconButton(onClick = { vm.refreshBooks() }) {
-                            Icon(Icons.Default.Refresh,
-                                contentDescription = "Refresh Library",
-                                modifier = Modifier.size(18.dp))
-                        }
+                        ActionIconButton(
+                            onClick = { vm.refreshBooks() },
+                            icon = Icons.Default.Refresh,
+                            tooltipText = "Refresh Books"
+                        )
                     }
                 }
             },
@@ -173,5 +195,9 @@ fun MainScreen() {
                 }
             }
         }
+    }
+
+    if (showAboutDialog) {
+        AboutDialog(onDismiss = { showAboutDialog = false })
     }
 }

@@ -27,6 +27,114 @@ in your IDE’s toolbar or run it directly from the terminal:
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
 
+# Building on Windows
+The existing configuration is a solid foundation, but to get a functional `.msi` 
+(Windows Installer), we need to address a few "Windows-specific" requirements. 
+Specifically, Windows installers are much pickier about icons, licensing, and the 
+toolchain required to build them.
+
+### 1. The Wix Toolset Requirement
+
+To generate an `.msi` on a Windows machine, you **must** have the **Wix Toolset** 
+(version 3.x is standard for Compose) installed on that laptop.
+
+* If you try to run `./gradlew packageMsi` on Linux, it will fail because the 
+  packaging tools are platform-dependent.
+* You can install it via [wixtoolset.org](https://wixtoolset.org/releases/) or via 
+ `choco install wixtoolset` if you use Chocolatey.
+
+---
+
+### 2. Refined `windows` Configuration
+
+Here is the updated block with the necessary additions for a professional Windows experience:
+
+```kotlin
+windows {
+    shortcut = true
+    menuGroup = "EBook Library Browser"
+    // upgradeUuid is vital for updates (prevents double-installing)
+    upgradeUuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890" 
+    
+    // Windows requires an .ico file specifically. 
+    // You can convert your books.png to books.ico online or via GIMP.
+    iconFile.set(project.file("src/jvmMain/resources/books.ico"))
+
+    // This puts the app in "Add/Remove Programs" correctly
+    dirChooser = true 
+    perUserInstall = false // Set to true if you don't have Admin rights on the work laptop
+    
+    // Optional: If you want a specific splash screen on Windows startup
+    // bitmapEditor = project.file("src/jvmMain/resources/splash.bmp")
+}
+```
+
+### 3. Handling the `modules`
+
+You've manually listed several modules. Since you're using **MySQL (JDBC)** 
+and **Gson**, Compose needs to know which parts of the JDK to bundle. A more 
+"future-proof" way to do this in Compose is to let it attempt to find them, but 
+keep your manual list for the "tricky" ones:
+
+```kotlin
+nativeDistributions {
+    // ... existing metadata ...
+    
+    modules("java.instrument", "java.sql", "jdk.unsupported", "java.naming", "java.desktop")
+    
+    // This helps include standard library parts often missed by reflection-heavy libraries like Gson
+    includeAllModules = false 
+}
+```
+
+---
+
+### 4. The Build Commands
+
+Once you have this in your `build.gradle.kts` and you are on your Windows laptop:
+
+1. **To test the app without installing:**
+```bash
+./gradlew run
+```
+
+2. **To create a "loose" folder with an .exe (fastest for testing):**
+```bash
+./gradlew createDistributable
+```
+
+*This will be in `build/compose/binaries/main/app`.*
+3. **To generate the full .msi installer:**
+```bash
+./gradlew packageMsi
+```
+
+*This will be in `build/compose/binaries/main/msi`.*
+
+---
+
+### 5. A Quick "Work Laptop" Tip
+
+Since it's a work laptop, you might run into **Code Signing** issues. 
+Windows might show a "Windows protected your PC" (SmartScreen) warning 
+because the `.msi` isn't signed with a $400/year certificate.
+
+* To bypass this, you just click **"More Info"** -> **"Run Anyway"**.
+* If your work IT policy is extremely strict, you might prefer using the 
+  output of `createDistributable` (the folder with the `.exe`) and just 
+  running it from a local directory rather than "installing" it.
+
+### Summary of Tasks
+
+* [ ] Convert `books.png` to `books.ico` and place it in resources.
+* [ ] Install Wix Toolset on the Windows machine.
+* [ ] Update the `windows` block in `build.gradle.kts`.
+
+**Would you like me to show you how to add a custom "About" dialog to the UI?** 
+Since you've added versioning and copyright to the Gradle file, it’s nice to 
+display that information inside the app's settings so you can verify which 
+version is currently running on your laptop.
+
 # TODOs
 As we move to **Windows**, there are three specific "polish" items that 
 usually come up with this `isConfigured` check:

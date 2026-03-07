@@ -34,10 +34,12 @@ fun BookListItem(book: EBook) {
             ListItem(
                 // LEADING: The "Read" Status
                 leadingContent = {
-                    Checkbox(
-                        checked = book.isRead,
-                        onCheckedChange = { vm.setRead(book, it) }
-                    )
+                    WithTooltip("Toggle is Read") {
+                        Checkbox(
+                            checked = book.isRead,
+                            onCheckedChange = { vm.setRead(book, it) }
+                        )
+                    }
                 },
 
                 // HEADLINE: Title
@@ -57,13 +59,10 @@ fun BookListItem(book: EBook) {
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            IconButton(onClick = { vm.startEditing(book) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Description",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                            ActionIconButton(onClick = { vm.startEditing(book) },
+                                icon = Icons.Default.Edit,
+                                tooltipText = "Edit Description",
+                            )
                         }
                     }
                 },
@@ -71,27 +70,31 @@ fun BookListItem(book: EBook) {
                 // TRAILING: Favorite toggle and Open action
                 trailingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Favorite Toggle (using an IconToggleButton for a cleaner look)
-                        IconToggleButton(
-                            checked = book.isFavorite,
-                            onCheckedChange = { vm.setFavorite(book, it, ) }
-                        ) {
-                            Icon(
-                                imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = if (book.isFavorite) Color.Green else LocalContentColor.current
-                            )
+                        WithTooltip("Toggle is Favorite") {
+                            // Favorite Toggle (using an IconToggleButton for a cleaner look)
+                            IconToggleButton(
+                                checked = book.isFavorite,
+                                onCheckedChange = { vm.setFavorite(book, it, ) }
+                            ) {
+                                Icon(
+                                    imageVector = if (book.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favorite",
+                                    tint = if (book.isFavorite) Color.Blue else LocalContentColor.current
+                                )
+                            }
                         }
 
                         VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 8.dp))
 
-                        Text(
-                            text = "OPEN",
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clickable { vm.openBook(book)}
-                                .padding(8.dp)
-                        )
+                        WithTooltip("Open EBook") {
+                            Text(
+                                text = "OPEN",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clickable { vm.openBook(book)}
+                                    .padding(8.dp)
+                            )
+                        }
                     }
                 }
             )
