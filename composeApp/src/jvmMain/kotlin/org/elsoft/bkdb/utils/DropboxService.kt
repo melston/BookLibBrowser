@@ -38,6 +38,15 @@ object DropboxService {
         clientV2
     }
 
+    /**
+     * Download a file from the specified path in Dropbox and write it
+     * to the filename provided.  The filename is expected to have no
+     * directory information and the file will be written in the
+     * cacheDir directory. If there is already a file at that
+     * path then skip the download.
+     *
+     * @return the full path to the file.
+     */
     fun download(dropboxPath: String, outFileName: String): String {
         // 1. Create a cache file in the cache directory
         val outFile = File(cacheDir, outFileName)

@@ -34,7 +34,6 @@ usually come up with this `isConfigured` check:
 - Reset Config Info
 - Platform-Specific Defaults in `SetupScreen`
 - The Database "First Run" Catch
-- Offline Indicator
 
 ### 1. The "Reset" Path
 
@@ -97,8 +96,3 @@ if (!isConfigured || viewModel.connectionError != null) {
 ```
 It appears that the `connectionError` might have to point to some similar
 state in the `DatabaseManager` as well.
-
-### The Offline Indicator
-You'll want a visual indicator in your BottomAppBar (the stats bar we built earlier) 
-to show that you are in "Offline Mode" and have "X Pending Changes." 
-It adds a lot of confidence when you see that the app is tracking your work.

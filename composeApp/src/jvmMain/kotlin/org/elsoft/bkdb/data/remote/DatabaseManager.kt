@@ -72,13 +72,13 @@ class DatabaseManager : RemoteDataSource {
         executeUpdate("UPDATE books SET is_favorite = ? WHERE id = ?", isFavorite, bookId)
     }
 
-    override suspend fun updateDescription(bookId: Int, newDescription: String?) {
+    override suspend fun updateDescription(bookId: Int, description: String?) {
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
                 val sql = "UPDATE books SET description = ? WHERE id = ?"
                 conn.prepareStatement(sql).use { pstmt ->
                     // MySQL handles nulls correctly if passed via setString
-                    pstmt.setString(1, newDescription)
+                    pstmt.setString(1, description)
                     pstmt.setInt(2, bookId)
                     pstmt.executeUpdate()
                 }

@@ -33,7 +33,6 @@ fun EBookApp() {
     }
 }
 
-
 suspend fun openEBook(filePath: String): Result<Unit> {
     val customCommand = ConfigManager.get(ConfigManager.viewer_command, "")
 
@@ -57,15 +56,20 @@ suspend fun openEBook(filePath: String): Result<Unit> {
     }
 }
 
-fun cacheName(filename: String): String {
-    // Extract the filename from the dropbox path to keep the extension correct
-    val modifiedFileName =
-        filename
-            .substringAfterLast("/")
-            .replace(" ", "_")
-    // Use a sanitized version of the path or a book ID to keep the cache file unique
-    val uniqueCacheName = "book_${filename.hashCode()}_$modifiedFileName"
+fun cacheName(path: String): String {
+    val fullFileName = path.substringAfterLast("/")
+    val baseName = fullFileName.substringBeforeLast(".", "")
+    val extension = fullFileName.substringAfterLast(".", "")
 
-    return uniqueCacheName
+    // 1. Shorten only the base name (remove a-z and _)
+    val shortenedBase = baseName
+        .replace(Regex("[a-z_]"), "")
+        .replace(" ", "")
+
+    // 2. Build the unique name: book + hash + shortenedBase + .ext
+    // This ensures "Java_Pro_1.epub" and "Java_Pro_2.epub" stay unique
+    val hash = path.hashCode().toString().takeLast(6)
+
+    return "BK_${hash}_$shortenedBase.$extension"
 }
 

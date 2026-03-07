@@ -1,14 +1,14 @@
 package org.elsoft.bkdb.data
 
 import org.elsoft.bkdb.EBook
-import org.elsoft.bkdb.data.local.LocalCacheManager
+import org.elsoft.bkdb.data.local.LocalDataSource
 import org.elsoft.bkdb.data.local.Transaction
 import org.elsoft.bkdb.data.local.TransactionType
 import org.elsoft.bkdb.data.remote.RemoteDataSource
 
 class EBookRepository(
     private val remoteSource: RemoteDataSource,
-    private val localSource: LocalCacheManager
+    private val localSource: LocalDataSource
 ) {
     suspend fun isOnline(): Boolean {
         return remoteSource.isAvailable()

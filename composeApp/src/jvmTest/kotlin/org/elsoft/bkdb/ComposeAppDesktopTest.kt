@@ -4,12 +4,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.DefaultAsserter.assertTrue
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ComposeAppDesktopTest {
 
     @Test
-    fun example() = runBlocking {
+    fun downloadEBook() = runBlocking {
         //val testUrl = "dropbox:/Docs/EBooks/Misc/TxtStuff/Other/XXX/Unknown/Jacks Family Saga - Unknown.epub"
         //val testUrl = "dropbox:/Docs/EBooks/Misc/TxtStuff/Other/XXX/Unknown/Kathy Learns - Unknown.epub"
         val testUrl = "dropbox:/Docs/EBooks/Misc/TxtStuff/Other/XXX/Unknown/Me and Martha Jane - Unknown.epub"
@@ -23,3 +22,5 @@ class ComposeAppDesktopTest {
         delay(2000)
     }
 }
+
+

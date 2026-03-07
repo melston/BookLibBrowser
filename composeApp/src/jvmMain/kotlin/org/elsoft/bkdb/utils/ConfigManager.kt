@@ -21,8 +21,6 @@ object ConfigManager {
     private val configFile =
         File(configDir, "config.properties")
 
-    private val cacheDir = Platform.getCacheDir()
-
     init {
         if (configFile.exists()) {
             FileInputStream(configFile).use { properties.load(it) }
