@@ -119,6 +119,8 @@ class EBookViewModel : ViewModel() {
     fun refreshBooks() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                isSyncing = true
+
                 // Update the DB with any pending changes.
                 repository.syncIfPossible()
 
@@ -129,6 +131,9 @@ class EBookViewModel : ViewModel() {
                 _allBooks.value = books
             } catch (e: Exception) {
                 snackbarHostState.showSnackbar("Database error: ${e.message}")
+            } finally {
+                // 5. This ALWAYS runs, even if a crash happens above
+                isSyncing = false
             }
         }
     }

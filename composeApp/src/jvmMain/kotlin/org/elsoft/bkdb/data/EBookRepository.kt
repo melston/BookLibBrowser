@@ -1,10 +1,10 @@
 package org.elsoft.bkdb.data
 
+import org.elsoft.bkdb.EBook
 import org.elsoft.bkdb.data.local.LocalCacheManager
+import org.elsoft.bkdb.data.local.Transaction
 import org.elsoft.bkdb.data.local.TransactionType
 import org.elsoft.bkdb.data.remote.RemoteDataSource
-import org.elsoft.bkdb.EBook
-import org.elsoft.bkdb.data.local.Transaction
 
 class EBookRepository(
     private val remoteSource: RemoteDataSource,
