@@ -1,4 +1,4 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.utils
 
 import com.dropbox.core.DbxRequestConfig
 import com.dropbox.core.oauth.DbxCredential

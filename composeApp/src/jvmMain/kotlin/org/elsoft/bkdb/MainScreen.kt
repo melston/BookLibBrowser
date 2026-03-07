@@ -5,15 +5,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -21,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -35,6 +40,7 @@ fun MainScreen() {
     val tabs = listOf(LibraryTab.ByTitle, LibraryTab.ByAuthor)
     val vm = viewModel<EBookViewModel>()
     val stats by vm.libraryStats.collectAsState()
+    val online by vm.isOnline.collectAsState()
 
     // Initial tab
     var selectedTab by remember { mutableStateOf<LibraryTab>(LibraryTab.ByTitle) }
@@ -105,13 +111,40 @@ fun MainScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stats,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        if (vm.isSyncing) {
+                            // Show spinning indicator while syncing
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp), // Keep it small for the status bar
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "Syncing with MySQL...",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = stats,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Icon(
+                            imageVector =
+                                if (online) Icons.Default.CloudDone
+                                else Icons.Default.CloudOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (online) MaterialTheme.colorScheme.onPrimaryContainer
+                                    else MaterialTheme.colorScheme.onSecondaryContainer
                         )
 
-                        // Optional: A "Refresh" button if you've added new files to Dropbox/DB
+                        // A "Refresh" button if you've added new files to Dropbox/DB
                         IconButton(onClick = { vm.refreshBooks() }) {
                             Icon(Icons.Default.Refresh,
                                 contentDescription = "Refresh Library",

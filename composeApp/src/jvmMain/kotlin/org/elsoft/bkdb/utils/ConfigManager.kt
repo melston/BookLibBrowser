@@ -1,4 +1,4 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.utils
 
 import java.io.File
 import java.io.FileInputStream

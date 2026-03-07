@@ -3,6 +3,9 @@ package org.elsoft.bkdb
 // Standard Java/Kotlin for Linux process execution
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import org.elsoft.bkdb.utils.ConfigManager
+import org.elsoft.bkdb.utils.DropboxService
+import org.elsoft.bkdb.utils.Platform
 import java.io.File
 
 data class EBook(

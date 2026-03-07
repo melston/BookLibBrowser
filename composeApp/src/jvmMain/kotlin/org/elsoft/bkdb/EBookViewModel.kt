@@ -17,12 +17,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.elsoft.bkdb.data.EBookRepository
+import org.elsoft.bkdb.data.local.LocalCacheManager
+import org.elsoft.bkdb.data.remote.DatabaseManager
+import org.elsoft.bkdb.utils.Platform
 
 enum class ReadFilter { ALL, UNREAD, READ }
 
 class EBookViewModel : ViewModel() {
     val snackbarHostState = SnackbarHostState()
-    val db = DatabaseManager()
+    val repository = EBookRepository(
+        DatabaseManager(),
+        LocalCacheManager(Platform.getCacheDir()))
     // UI State: What is the user currently looking for?
     var searchQuery by mutableStateOf("")
 
@@ -34,7 +40,21 @@ class EBookViewModel : ViewModel() {
     // The current filter selection
     var readFilter by mutableStateOf(ReadFilter.ALL)
 
-    // The logic that drives the UI
+    // State for the editing dialog
+    var editingBook by mutableStateOf<EBook?>(null)
+        private set // Only the ViewModel can change this directly
+
+    // To allow the UI to display syncing state
+    var isSyncing by mutableStateOf(false)
+
+    // In ViewModel
+    val isOnline: StateFlow<Boolean> = snapshotFlow { isSyncing }
+        .map { repository.isOnline() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), true)
+
+    /**
+     *
+     */
     val displayedBooks: StateFlow<List<EBook>> = snapshotFlow { searchQuery }
         .combine(snapshotFlow { readFilter }) { query, filter -> query to filter }
         .combine(_allBooks) { (query, filter), books ->
@@ -55,7 +75,10 @@ class EBookViewModel : ViewModel() {
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // 1. The Filtered List (replaces filteredBooks)
+    /**
+     * This is a <code>List&lt;EBook&gt;</code> containing all of the books in the
+     * repository after applying any selected filters.
+     */
     val filteredBooks: StateFlow<List<EBook>> = snapshotFlow { searchQuery }
         .combine(displayedBooks) { query, books ->
             if (query.isBlank()) books
@@ -65,14 +88,29 @@ class EBookViewModel : ViewModel() {
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // 2. The Grouped Data (replaces groupedByAuthor)
-    // We derive this directly from the filteredBooks flow
+    /**
+     * The books in the repository grouped by author after applying any
+     * selected filters.
+     *
+     * This is a map from <code>(authorName: String)</code> to
+     * a <code>List&lt;EBook&gt;</code>.
+     *
+     */
     val booksByAuthor: StateFlow<Map<String, List<EBook>>> = filteredBooks
         .map { books ->
             books.groupBy { it.author }
                 .toSortedMap()
                 .mapValues { it.value.sortedBy { it.title } }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+
+    // Derive stats from the existing flows
+    val libraryStats: StateFlow<String> = displayedBooks.combine(_allBooks) { filtered, all ->
+        if (filtered.size == all.size) {
+            "Total: ${all.size} books"
+        } else {
+            "Showing ${filtered.size} of ${all.size} books"
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "Loading...")
 
     init {
         refreshBooks()
@@ -81,8 +119,13 @@ class EBookViewModel : ViewModel() {
     fun refreshBooks() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Assuming DatabaseManager returns the list from MySQL
-                val books = db.fetchBooks()
+                // Update the DB with any pending changes.
+                repository.syncIfPossible()
+
+                // Now fetch the latest set of book data
+                val books = repository.getBooks()
+
+                // Update the UI state
                 _allBooks.value = books
             } catch (e: Exception) {
                 snackbarHostState.showSnackbar("Database error: ${e.message}")
@@ -103,7 +146,7 @@ class EBookViewModel : ViewModel() {
     fun setRead(book: EBook, isRead: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             // 1. Update the Database
-            db.updateReadStatus(book.id, isRead)
+            repository.updateReadStatus(book.id, isRead)
 
             // 2. Update the State (Immutable way)
             _allBooks.update { currentList ->
@@ -117,7 +160,7 @@ class EBookViewModel : ViewModel() {
     fun setFavorite(book: EBook, isFavorite: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             // 1. Update the Database
-            db.updateFavoriteStatus(book.id, isFavorite)
+            repository.updateFavoriteStatus(book.id, isFavorite)
 
             // 2. Update the State
             _allBooks.update { currentList ->
@@ -127,10 +170,6 @@ class EBookViewModel : ViewModel() {
             }
         }
     }
-
-    // State for the editing dialog
-    var editingBook by mutableStateOf<EBook?>(null)
-        private set // Only the ViewModel can change this directly
 
     fun startEditing(book: EBook) {
         editingBook = book
@@ -144,7 +183,7 @@ class EBookViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // 1. Database Update
-                db.updateDescription(book.id, newDesc)
+                repository.updateDescription(book.id, newDesc)
 
                 // 2. UI State Update
                 _allBooks.update { currentList ->
@@ -159,13 +198,4 @@ class EBookViewModel : ViewModel() {
             }
         }
     }
-
-    // Derive stats from the existing flows
-    val libraryStats: StateFlow<String> = displayedBooks.combine(_allBooks) { filtered, all ->
-        if (filtered.size == all.size) {
-            "Total: ${all.size} books"
-        } else {
-            "Showing ${filtered.size} of ${all.size} books"
-        }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, "Loading...")
 }

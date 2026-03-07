@@ -31,6 +31,8 @@ kotlin {
 
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.firebase.crashlytics.buildtools)
+            implementation(libs.google.code.gson)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.mysql.connector)
         }
@@ -63,6 +65,12 @@ compose.desktop {
                 shortcut = true
                 // Point to an .png or .icns file for the sidebar icon
                 iconFile.set(project.file("src/jvmMain/resources/books.png"))
+            }
+            windows {
+                shortcut = true
+                menuGroup = "EBook Library"
+                // This ensures it puts it in a sensible place in the Start Menu
+                upgradeUuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
             }
         }
     }

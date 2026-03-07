@@ -1,9 +1,13 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.data.remote
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.elsoft.bkdb.data.local.TransactionType
+import org.elsoft.bkdb.EBook
+import org.elsoft.bkdb.utils.ConfigManager
 import java.sql.DriverManager
 
-
-class DatabaseManager {
+class DatabaseManager : RemoteDataSource {
     private val url = ConfigManager.get(ConfigManager.db_url)
     private val user = ConfigManager.get(ConfigManager.db_user)
     private val pass = ConfigManager.get(ConfigManager.db_password)
@@ -20,7 +24,11 @@ class DatabaseManager {
 
     }
 
-    fun fetchBooks(): List<EBook> {
+    override suspend fun isAvailable(): Boolean = withContext(Dispatchers.IO) {
+        testConnection(url, user, pass)
+    }
+
+    override suspend fun fetchBooks(): List<EBook> {
         val bookList = mutableListOf<EBook>()
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
@@ -56,15 +64,15 @@ class DatabaseManager {
         return bookList
     }
 
-    fun updateReadStatus(bookId: Int, isRead: Boolean) {
-        executeUpdate("UPDATE books SET isRead = ? WHERE id = ?", isRead, bookId)
+    override suspend fun updateReadStatus(bookId: Int, isRead: Boolean) {
+        executeUpdate("UPDATE books SET is_read = ? WHERE id = ?", isRead, bookId)
     }
 
-    fun updateFavoriteStatus(bookId: Int, isFavorite: Boolean) {
-        executeUpdate("UPDATE books SET isFavorite = ? WHERE id = ?", isFavorite, bookId)
+    override suspend fun updateFavoriteStatus(bookId: Int, isFavorite: Boolean) {
+        executeUpdate("UPDATE books SET is_favorite = ? WHERE id = ?", isFavorite, bookId)
     }
 
-    fun updateDescription(bookId: Int, newDescription: String?) {
+    override suspend fun updateDescription(bookId: Int, newDescription: String?) {
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
                 val sql = "UPDATE books SET description = ? WHERE id = ?"
