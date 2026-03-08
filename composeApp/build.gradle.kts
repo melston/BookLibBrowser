@@ -1,5 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
+val appVersion = "1.0.0"
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
@@ -47,9 +49,9 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "ebook-lib-browser"
-            packageVersion = "1.0.0"
+            packageVersion = appVersion
             description = "Ebook Library Browser"
-            copyright = "@ 2026 Mark Elston"
+            copyright = "© 2026 Mark Elston"
             vendor = "Mark Elston"
 
             modules(
