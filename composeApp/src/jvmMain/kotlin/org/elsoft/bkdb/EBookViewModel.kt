@@ -30,16 +30,40 @@ class EBookViewModel : ViewModel() {
     val repository = EBookRepository(
         DatabaseManager(),
         LocalCacheManager(Platform.getCacheDir()))
+
     // UI State: What is the user currently looking for?
-    var searchQuery by mutableStateOf("")
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // Add a setter for the UI to call
+    fun setSearchQuery(newQuery: String) {
+        _searchQuery.value = newQuery
+    }
 
     // The backing property (private)
     private val _allBooks = MutableStateFlow<List<EBook>>(emptyList())
     // The public observable state
     val allBooks: StateFlow<List<EBook>> = _allBooks.asStateFlow()
 
+    private val _allCategories = MutableStateFlow<List<Category>>(emptyList())
+    val allCategories: StateFlow<List<Category>> = _allCategories.asStateFlow()
+
     // The current filter selection
-    var readFilter by mutableStateOf(ReadFilter.ALL)
+    private val _readFilter = MutableStateFlow(ReadFilter.ALL)
+    val readFilter: StateFlow<ReadFilter> = _readFilter.asStateFlow()
+
+    // Add a setter for your UI components (like a RadioGroup or Switch)
+    fun setReadFilter(filter: ReadFilter) {
+        _readFilter.value = filter
+    }
+
+    // The current category filter
+    private val _categoryFilter = MutableStateFlow<Category?>(null)
+    val categoryFilter: StateFlow<Category?> = _categoryFilter.asStateFlow()
+
+    fun setCategoryFilter(filter: Category?) {
+        _categoryFilter.value = filter
+    }
 
     // State for the editing dialog
     var editingBook by mutableStateOf<EBook?>(null)
@@ -68,40 +92,36 @@ class EBookViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), true)
 
     /**
-     *
-     */
-    val displayedBooks: StateFlow<List<EBook>> = snapshotFlow { searchQuery }
-        .combine(snapshotFlow { readFilter }) { query, filter -> query to filter }
-        .combine(_allBooks) { (query, filter), books ->
-            books.filter { book ->
-                // 1. Apply Text Search
-                val matchesQuery = query.isBlank() ||
-                        book.title.contains(query, ignoreCase = true) ||
-                        book.author.contains(query, ignoreCase = true)
-
-                // 2. Apply Read/Unread Filter
-                val matchesFilter = when (filter) {
-                    ReadFilter.ALL -> true
-                    ReadFilter.UNREAD -> !book.isRead
-                    ReadFilter.READ -> book.isRead
-                }
-
-                matchesQuery && matchesFilter
-            }
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
-    /**
      * This is a <code>List&lt;EBook&gt;</code> containing all of the books in the
      * repository after applying any selected filters.
      */
-    val filteredBooks: StateFlow<List<EBook>> = snapshotFlow { searchQuery }
-        .combine(displayedBooks) { query, books ->
-            if (query.isBlank()) books
-            else books.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                        it.author.contains(query, ignoreCase = true)
+    val filteredBooks: StateFlow<List<EBook>> = combine(
+        allBooks,           // The master list of books
+        _searchQuery,      // The existing title search string
+        _categoryFilter,   // The new category filter
+        _readFilter        // Whether read or not.
+    ) { books: List<EBook>, query: String, category: Category?, readFilter ->
+        books.filter { book ->
+            // 1. Text Search (Title or Author)
+            val matchesQuery = query.isBlank() ||
+                    book.title.contains(query, ignoreCase = true) ||
+                    book.author.contains(query, ignoreCase = true)
+
+            // 2. Category Filter
+            val matchesCategory = category == null || book.category == category.id
+
+            // 3. Read/Unread Filter
+            val matchesRead = when (readFilter) {
+                ReadFilter.ALL -> true
+                ReadFilter.UNREAD -> !book.isRead
+                ReadFilter.READ -> book.isRead
             }
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+            matchesQuery && matchesCategory && matchesRead
+        }
+    }.stateIn(viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList())
 
     /**
      * The books in the repository grouped by author after applying any
@@ -119,16 +139,18 @@ class EBookViewModel : ViewModel() {
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     // Derive stats from the existing flows
-    val libraryStats: StateFlow<String> = displayedBooks.combine(_allBooks) { filtered, all ->
-        if (filtered.size == all.size) {
-            "Total: ${all.size} books"
-        } else {
-            "Showing ${filtered.size} of ${all.size} books"
-        }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, "Loading...")
+    val libraryStats: StateFlow<String> = filteredBooks.map { books ->
+        "Showing ${filteredBooks.value.size} of ${allBooks.value.size} books"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     init {
         refreshBooks()
+    }
+
+    fun resetAllFilters() {
+        setSearchQuery("")
+        setCategoryFilter(null)
+        setReadFilter(ReadFilter.ALL)
     }
 
     fun refreshBooks() {
@@ -141,9 +163,11 @@ class EBookViewModel : ViewModel() {
 
                 // Now fetch the latest set of book data
                 val books = repository.getBooks()
+                val categories = repository.getCategories()
 
                 // Update the UI state
                 _allBooks.value = books
+                _allCategories.value = categories
             } catch (e: Exception) {
                 snackbarHostState.showSnackbar("Database error: ${e.message}")
             } finally {

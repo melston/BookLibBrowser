@@ -26,7 +26,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -42,6 +41,7 @@ fun MainScreen() {
     val vm = viewModel<EBookViewModel>()
     val stats by vm.libraryStats.collectAsState()
     val online by vm.isOnline.collectAsState()
+    val searchQuery by vm.searchQuery.collectAsState()
     var showAboutDialog by remember { mutableStateOf(false) }
 
     // Initial tab
@@ -54,7 +54,7 @@ fun MainScreen() {
                     TopAppBar(
                         title = { Text("EBook Library Browser") },
                         actions = {
-                            val filterTooltip = when(vm.readFilter) {
+                            val filterTooltip = when(vm.readFilter.value) {
                                 ReadFilter.ALL -> "Currently showing All (Click for Unread)"
                                 ReadFilter.UNREAD -> "Currently showing Unread (Click for Read)"
                                 ReadFilter.READ -> "Currently showing Read (Click for All)"
@@ -62,20 +62,21 @@ fun MainScreen() {
                             WithTooltip(filterTooltip) {
                                 // A simple icon button to cycle through filters
                                 IconButton(onClick = {
-                                    vm.readFilter = when(vm.readFilter) {
-                                        ReadFilter.ALL -> ReadFilter.UNREAD
-                                        ReadFilter.UNREAD -> ReadFilter.READ
-                                        ReadFilter.READ -> ReadFilter.ALL
-                                    }
+                                    vm.setReadFilter(
+                                        when(vm.readFilter.value) {
+                                            ReadFilter.ALL -> ReadFilter.UNREAD
+                                            ReadFilter.UNREAD -> ReadFilter.READ
+                                            ReadFilter.READ -> ReadFilter.ALL
+                                    })
                                 }) {
                                     Icon(
-                                        imageVector = when(vm.readFilter) {
+                                        imageVector = when(vm.readFilter.value) {
                                             ReadFilter.ALL -> Icons.AutoMirrored.Filled.List
                                             ReadFilter.UNREAD -> Icons.Default.RadioButtonUnchecked
                                             ReadFilter.READ -> Icons.Default.CheckCircle
                                         },
                                         contentDescription = "Filter by read status",
-                                        tint = if (vm.readFilter == ReadFilter.ALL) LocalContentColor.current
+                                        tint = if (vm.readFilter.value == ReadFilter.ALL) LocalContentColor.current
                                         else MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -90,14 +91,14 @@ fun MainScreen() {
                         }
                     )
                     OutlinedTextField(
-                        value = vm.searchQuery,
-                        onValueChange = { vm.searchQuery = it },
+                        value = searchQuery,
+                        onValueChange = { vm.setSearchQuery(it) },
                         modifier = Modifier.fillMaxWidth().padding(8.dp),
                         placeholder = { Text("Search by title or author...") },
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         trailingIcon = {
-                            if (vm.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { vm.searchQuery = "" }) {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { vm.setSearchQuery( "" ) }) {
                                     Icon(Icons.Default.Close, null)
                                 }
                             }
@@ -105,6 +106,10 @@ fun MainScreen() {
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
+
+                    // Category Dropdown
+                    CategoryDropdown(vm)
+
                     TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
                         tabs.forEach { tab ->
                             Tab(
@@ -177,10 +182,18 @@ fun MainScreen() {
             },
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
-                when (selectedTab) {
-                    is LibraryTab.ByTitle -> TitleListView()
+                val filteredBooks by vm.filteredBooks.collectAsState()
+                val allBooks by vm.allBooks.collectAsState()
 
-                    is LibraryTab.ByAuthor -> AuthorListView()
+                // 1. Check if the library has data but the current filter killed all results
+                if (allBooks.isNotEmpty() && filteredBooks.isEmpty()) {
+                    EmptyLibraryState(onReset = { vm.resetAllFilters() })
+                } else {
+                    // 2. Normal View: Show the tabs as usual
+                    when (selectedTab) {
+                        is LibraryTab.ByTitle -> TitleListView()
+                        is LibraryTab.ByAuthor -> AuthorListView()
+                    }
                 }
 
                 if (vm.editingBook != null) {

@@ -1,5 +1,6 @@
 package org.elsoft.bkdb.data
 
+import org.elsoft.bkdb.Category
 import org.elsoft.bkdb.EBook
 import org.elsoft.bkdb.data.local.LocalDataSource
 import org.elsoft.bkdb.data.local.Transaction
@@ -32,6 +33,17 @@ class EBookRepository(
         }
     }
 
+    suspend fun getCategories(): List<Category> {
+        return if (remoteSource.isAvailable()) {
+            val categories = remoteSource.fetchCategories()
+            localSource.saveCategoryCache(categories) // Update local copy
+            categories
+        } else {
+            localSource.getCachedCategories() // Use offline copy
+            emptyList()
+        }
+    }
+
     suspend fun syncIfPossible() {
         if (remoteSource.isAvailable()) {
             val pending = localSource.getPendingTransactions()
@@ -53,7 +65,9 @@ class EBookRepository(
 
             // Now that the remote is updated, refresh the local snapshot
             val freshBooks = remoteSource.fetchBooks()
+            val categories = remoteSource.fetchCategories()
             localSource.saveCache(freshBooks)
+            localSource.saveCategoryCache(categories)
             localSource.updateLastSyncTimestamp()
         }
     }

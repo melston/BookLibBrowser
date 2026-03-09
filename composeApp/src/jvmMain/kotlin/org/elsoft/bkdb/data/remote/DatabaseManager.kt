@@ -2,6 +2,7 @@ package org.elsoft.bkdb.data.remote
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.elsoft.bkdb.Category
 import org.elsoft.bkdb.data.local.TransactionType
 import org.elsoft.bkdb.EBook
 import org.elsoft.bkdb.utils.ConfigManager
@@ -26,6 +27,29 @@ class DatabaseManager : RemoteDataSource {
 
     override suspend fun isAvailable(): Boolean = withContext(Dispatchers.IO) {
         testConnection(url, user, pass)
+    }
+
+    override suspend fun fetchCategories(): List<Category> {
+        val catList = mutableListOf<Category>()
+        try {
+            DriverManager.getConnection(url, user, pass).use { conn ->
+                val query = "SELECT * FROM categories ORDER BY name ASC"
+                val statement = conn.createStatement()
+                val resultSet = statement.executeQuery(query)
+
+                while (resultSet.next()) {
+                    catList.add(
+                        Category(
+                            id = resultSet.getInt("id"),
+                            name = resultSet.getString("name"),
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return catList
     }
 
     override suspend fun fetchBooks(): List<EBook> {
@@ -55,6 +79,7 @@ class DatabaseManager : RemoteDataSource {
                             filePath = resultSet.getString("file_path"),
                             isRead = resultSet.getBoolean("is_read"),
                             isFavorite = resultSet.getBoolean("is_favorite"),
+                            category = resultSet.getInt("category_id"),
                             description = finalDescription,
                         )
                     )

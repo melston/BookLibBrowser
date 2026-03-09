@@ -2,6 +2,7 @@ package org.elsoft.bkdb.data.local
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import org.elsoft.bkdb.Category
 import org.elsoft.bkdb.EBook
 import java.io.File
 
@@ -10,6 +11,29 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
     private val transactionFile = File(cacheDir, "pending_transactions.json")
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val syncInfoFile = File(cacheDir, "sync_info.json")
+    private val categoryCacheFile = File(cacheDir, "category_cache.json")
+
+    override fun saveCategoryCache(categories: List<Category>) {
+        try {
+            val jsonString = gson.toJson(categories) // Assuming 'gson' is already defined
+            categoryCacheFile.writeText(jsonString)
+        } catch (e: Exception) {
+            println("Failed to save category cache\n" + e.message)
+        }
+    }
+
+    override fun getCachedCategories(): List<Category> {
+        if (!categoryCacheFile.exists()) return emptyList()
+
+        return try {
+            val jsonString = categoryCacheFile.readText()
+            val itemType = object : TypeToken<List<Category>>() {}.type
+            gson.fromJson(jsonString, itemType) ?: emptyList()
+        } catch (e: Exception) {
+            println("Failed to read category cache\n" + e.message)
+            emptyList()
+        }
+    }
 
     override fun getCachedBooks(): List<EBook> {
         if (!cacheFile.exists()) return emptyList()

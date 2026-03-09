@@ -8,6 +8,8 @@ import org.elsoft.bkdb.utils.DropboxService
 import org.elsoft.bkdb.utils.Platform
 import java.io.File
 
+data class Category(val id: Int, val name: String)
+
 data class EBook(
     val id: Int,
     val title: String,
@@ -16,6 +18,7 @@ data class EBook(
     val filePath: String, // The absolute path on your Linux system
     val isRead: Boolean,
     val isFavorite: Boolean,
+    val category: Int,
     val description: String?,
 )
 
