@@ -9,6 +9,7 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
     private val cacheFile = File(cacheDir, "library_cache.json")
     private val transactionFile = File(cacheDir, "pending_transactions.json")
     private val gson = GsonBuilder().setPrettyPrinting().create()
+    private val syncInfoFile = File(cacheDir, "sync_info.json")
 
     override fun getCachedBooks(): List<EBook> {
         if (!cacheFile.exists()) return emptyList()
@@ -78,4 +79,19 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
         }
         return bookMap.values.toList()
     }
+
+    override fun updateLastSyncTimestamp() {
+        val now = System.currentTimeMillis()
+        syncInfoFile.writeText(now.toString())
+    }
+
+    override fun getLastSyncTimestamp(): Long {
+        return if (syncInfoFile.exists()) syncInfoFile.readText().toLongOrNull() ?: 0L else 0L
+    }
+
+    // Helper for the UI to get the count of "outbox" items
+    override fun getPendingTransactionCount(): Int {
+        return getPendingTransactions().size
+    }
+
 }

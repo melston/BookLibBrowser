@@ -8,4 +8,7 @@ interface LocalDataSource {
     fun logTransaction(tx: Transaction)
     fun getPendingTransactions(): List<Transaction>
     fun clearTransactions()
+    fun updateLastSyncTimestamp()
+    fun getLastSyncTimestamp(): Long
+    fun getPendingTransactionCount(): Int
 }

@@ -14,6 +14,14 @@ class EBookRepository(
         return remoteSource.isAvailable()
     }
 
+    fun lastSyncTimeStamp(): Long {
+        return localSource.getLastSyncTimestamp()
+    }
+
+    fun getPendingTransactionCount(): Int {
+        return localSource.getPendingTransactionCount()
+    }
+
     suspend fun getBooks(): List<EBook> {
         return if (remoteSource.isAvailable()) {
             val books = remoteSource.fetchBooks()
@@ -46,6 +54,7 @@ class EBookRepository(
             // Now that the remote is updated, refresh the local snapshot
             val freshBooks = remoteSource.fetchBooks()
             localSource.saveCache(freshBooks)
+            localSource.updateLastSyncTimestamp()
         }
     }
 

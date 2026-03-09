@@ -44,12 +44,14 @@ class DatabaseManager : RemoteDataSource {
                     } else {
                         rawDescription
                     }
+                    // Change the variable type to String? (with the question mark)
+                    val pubID: String? = resultSet.getString("publisher_id")
                     bookList.add(
                         EBook(
                             id = resultSet.getInt("id"),
                             title = resultSet.getString("title"),
                             author = resultSet.getString("author"),
-                            pubID = resultSet.getString("publisher_id"),
+                            pubID = pubID,
                             filePath = resultSet.getString("file_path"),
                             isRead = resultSet.getBoolean("is_read"),
                             isFavorite = resultSet.getBoolean("is_favorite"),

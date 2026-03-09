@@ -1,6 +1,7 @@
 package org.elsoft.bkdb
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -47,7 +48,21 @@ class EBookViewModel : ViewModel() {
     // To allow the UI to display syncing state
     var isSyncing by mutableStateOf(false)
 
-    // In ViewModel
+    val syncStatus: String by derivedStateOf {
+        val timestamp = repository.lastSyncTimeStamp()
+        val pendingCount = repository.getPendingTransactionCount()
+
+        val dateStr = if (timestamp == 0L) "Never" else {
+            java.text
+                .SimpleDateFormat("MMM dd, yyyy HH:mm")
+                .format(java.util.Date(timestamp))
+        }
+
+        val pendingStr = if (pendingCount > 0) "\nPending Changes: $pendingCount" else ""
+
+        "Last Home Sync: $dateStr$pendingStr"
+    }
+
     val isOnline: StateFlow<Boolean> = snapshotFlow { isSyncing }
         .map { repository.isOnline() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), true)

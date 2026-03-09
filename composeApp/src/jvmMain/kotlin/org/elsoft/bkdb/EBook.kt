@@ -12,7 +12,7 @@ data class EBook(
     val id: Int,
     val title: String,
     val author: String,
-    val pubID: String,
+    val pubID: String?,
     val filePath: String, // The absolute path on your Linux system
     val isRead: Boolean,
     val isFavorite: Boolean,
