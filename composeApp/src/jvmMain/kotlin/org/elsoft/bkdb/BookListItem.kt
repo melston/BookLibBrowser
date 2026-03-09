@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -151,19 +152,37 @@ fun BookListItem(book: EBook) {
             Column(modifier = Modifier.padding(top = 8.dp, start = 24.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp), thickness = 0.5.dp)
 
-                Text(
-                    text = book.description ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row() {
+                    Text(
+                        text = book.description ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                TextButton(
-                    onClick = { vm.startEditing(book) },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Edit Description")
+                    TextButton(
+                        onClick = { vm.startEditing(book) },
+                        //modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Edit,
+                            null,
+                            modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Edit Description")
+                    }
+                }
+
+                Row() {
+                    Text(
+                        text = "LOCATION:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = book.filePath,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                 }
             }
         }
