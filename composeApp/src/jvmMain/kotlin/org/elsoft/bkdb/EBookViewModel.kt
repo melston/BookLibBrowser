@@ -1,22 +1,11 @@
 package org.elsoft.bkdb
 
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.elsoft.bkdb.data.EBookRepository
 import org.elsoft.bkdb.data.local.LocalCacheManager
@@ -26,7 +15,10 @@ import org.elsoft.bkdb.utils.Platform
 enum class ReadFilter { ALL, UNREAD, READ }
 
 class EBookViewModel : ViewModel() {
-    val snackbarHostState = SnackbarHostState()
+    // Use a Channel for one-time events
+    private val _uiEvents = Channel<String>(Channel.BUFFERED)
+    val uiEvents = _uiEvents.receiveAsFlow()
+
     val repository = EBookRepository(
         DatabaseManager(),
         LocalCacheManager(Platform.getCacheDir()))
@@ -66,26 +58,41 @@ class EBookViewModel : ViewModel() {
     }
 
     // State for the editing dialog
-    var editingBook by mutableStateOf<EBook?>(null)
-        private set // Only the ViewModel can change this directly
+    private val _editingBook = MutableStateFlow<EBook?>(null)
+    val editingBook: StateFlow<EBook?> = _editingBook.asStateFlow()
+    fun setEditingBook(book: EBook?) {
+        _editingBook.value = book
+    }
 
     // To allow the UI to display syncing state
-    var isSyncing by mutableStateOf(false)
-
-    val syncStatus: String by derivedStateOf {
-        val timestamp = repository.lastSyncTimeStamp()
-        val pendingCount = repository.getPendingTransactionCount()
-
-        val dateStr = if (timestamp == 0L) "Never" else {
-            java.text
-                .SimpleDateFormat("MMM dd, yyyy HH:mm")
-                .format(java.util.Date(timestamp))
-        }
-
-        val pendingStr = if (pendingCount > 0) "\nPending Changes: $pendingCount" else ""
-
-        "Last Home Sync: $dateStr$pendingStr"
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+    fun setIsSyncing(boolean: Boolean) {
+        _isSyncing.value = boolean
     }
+
+    // This may need to change.  If refreshBooks causes the sync state to
+    // differ then the timestamp and count need to be Flows from the
+    // Repository to trigger a change to the syncStatus.
+//    val syncStatus: StateFlow<String> = flow {
+//        // 1. Fetch the data once
+//        val timestamp = repository.lastSyncTimeStamp()
+//        val count = repository.getPendingTransactionCount()
+//
+//        // 2. Do the formatting logic
+//        val dateStr = if (timestamp == 0L) "Never" else {
+//            java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
+//                .format(java.util.Date(timestamp))
+//        }
+//        val pendingStr = if (count > 0) "\nPending Changes: $count" else ""
+//
+//        // 3. Emit the final string
+//        emit("Last Home Sync: $dateStr$pendingStr")
+//    }.stateIn(
+//        scope = viewModelScope,
+//        started = SharingStarted.Lazily, // Only runs when the UI actually looks at it
+//        initialValue = "Checking sync..."
+//    )
 
     val isOnline: StateFlow<Boolean> = snapshotFlow { isSyncing }
         .map { repository.isOnline() }
@@ -156,7 +163,7 @@ class EBookViewModel : ViewModel() {
     fun refreshBooks() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                isSyncing = true
+                setIsSyncing(true)
 
                 // Update the DB with any pending changes.
                 repository.syncIfPossible()
@@ -169,10 +176,10 @@ class EBookViewModel : ViewModel() {
                 _allBooks.value = books
                 _allCategories.value = categories
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Database error: ${e.message}")
+                _uiEvents.send("Database error: ${e.message}")
             } finally {
                 // 5. This ALWAYS runs, even if a crash happens above
-                isSyncing = false
+                setIsSyncing(false)
             }
         }
     }
@@ -182,7 +189,7 @@ class EBookViewModel : ViewModel() {
             val result = openEBook(book.filePath)
 
             result.onFailure { error ->
-                snackbarHostState.showSnackbar("Error: ${error.message}")
+                _uiEvents.send("Error opening book: ${error.message}")
             }
         }
     }
@@ -216,11 +223,11 @@ class EBookViewModel : ViewModel() {
     }
 
     fun startEditing(book: EBook) {
-        editingBook = book
+        setEditingBook(book)
     }
 
     fun stopEditing() {
-        editingBook = null
+        setEditingBook(null)
     }
 
     fun updateDescription(book: EBook, newDesc: String?) {
@@ -238,7 +245,7 @@ class EBookViewModel : ViewModel() {
                 // 3. Close the dialog
                 stopEditing()
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Error saving description: ${e.message}")
+                _uiEvents.send("Error saving description: ${e.message}")
             }
         }
     }

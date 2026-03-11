@@ -7,7 +7,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -16,8 +15,7 @@ import org.elsoft.bkdb.utils.ConfigManager
 
 @Composable
 fun SetupScreen(onConfigSaved: () -> Unit) {
-    val viewModel = viewModel<EBookViewModel>()
-    val snackbarHostState = viewModel.snackbarHostState
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     var url by remember { mutableStateOf("jdbc:mysql://localhost:3306/bookdb") }
@@ -29,9 +27,12 @@ fun SetupScreen(onConfigSaved: () -> Unit) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { _ ->
+    ) { innerPadding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(32.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

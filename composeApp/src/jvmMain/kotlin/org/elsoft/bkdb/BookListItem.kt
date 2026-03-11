@@ -9,26 +9,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -152,28 +141,31 @@ fun BookListItem(book: EBook) {
             Column(modifier = Modifier.padding(top = 8.dp, start = 24.dp)) {
                 HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp), thickness = 0.5.dp)
 
-                Row() {
+                Row(modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = book.description ?: "",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
                     )
 
                     TextButton(
                         onClick = { vm.startEditing(book) },
-                        //modifier = Modifier.align(Alignment.End)
+                        contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {
                         Icon(Icons.Default.Edit,
                             null,
                             modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Edit Description")
+                        Text("Edit")
                     }
                 }
 
                 Row() {
                     Text(
-                        text = "LOCATION:",
+                        text = "LOCATION:  ",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
