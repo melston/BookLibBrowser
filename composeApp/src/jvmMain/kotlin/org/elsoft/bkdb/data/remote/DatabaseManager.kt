@@ -3,10 +3,14 @@ package org.elsoft.bkdb.data.remote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.elsoft.bkdb.Category
-import org.elsoft.bkdb.data.local.TransactionType
 import org.elsoft.bkdb.EBook
 import org.elsoft.bkdb.utils.ConfigManager
 import java.sql.DriverManager
+
+private object Consts {
+    const val EBOOK_TBL = "books"
+    const val CATEGORY_TBL = "categories"
+}
 
 class DatabaseManager : RemoteDataSource {
     private val url = ConfigManager.get(ConfigManager.db_url)
@@ -33,7 +37,7 @@ class DatabaseManager : RemoteDataSource {
         val catList = mutableListOf<Category>()
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
-                val query = "SELECT * FROM categories ORDER BY name ASC"
+                val query = "SELECT * FROM ${Consts.CATEGORY_TBL} ORDER BY name ASC"
                 val statement = conn.createStatement()
                 val resultSet = statement.executeQuery(query)
 
@@ -56,7 +60,7 @@ class DatabaseManager : RemoteDataSource {
         val bookList = mutableListOf<EBook>()
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
-                val query = "SELECT * FROM books ORDER BY title ASC"
+                val query = "SELECT * FROM ${Consts.EBOOK_TBL} ORDER BY title ASC"
                 val statement = conn.createStatement()
                 val resultSet = statement.executeQuery(query)
 
@@ -91,31 +95,47 @@ class DatabaseManager : RemoteDataSource {
         return bookList
     }
 
-    override suspend fun updateReadStatus(bookId: Int, isRead: Boolean) {
-        executeUpdate("UPDATE books SET is_read = ? WHERE id = ?", isRead, bookId)
+    override suspend fun updateReadStatus(bookId: Int, isRead: Boolean): Result<Unit> {
+        return executeUpdate("UPDATE ${Consts.EBOOK_TBL} SET is_read = ? WHERE id = ?", isRead, bookId)
     }
 
-    override suspend fun updateFavoriteStatus(bookId: Int, isFavorite: Boolean) {
-        executeUpdate("UPDATE books SET is_favorite = ? WHERE id = ?", isFavorite, bookId)
+    override suspend fun updateFavoriteStatus(bookId: Int, isFavorite: Boolean): Result<Unit> {
+        return executeUpdate("UPDATE ${Consts.EBOOK_TBL} SET is_favorite = ? WHERE id = ?", isFavorite, bookId)
     }
 
-    override suspend fun updateDescription(bookId: Int, description: String?) {
+    override suspend fun updateDescription(bookId: Int, description: String?): Result<Unit> {
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
-                val sql = "UPDATE books SET description = ? WHERE id = ?"
+                val sql = "UPDATE ${Consts.EBOOK_TBL} SET description = ? WHERE id = ?"
                 conn.prepareStatement(sql).use { pstmt ->
                     // MySQL handles nulls correctly if passed via setString
                     pstmt.setString(1, description)
                     pstmt.setInt(2, bookId)
                     pstmt.executeUpdate()
                 }
+
+                return Result.success(Unit)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            return Result.failure(e)
         }
     }
 
-    private fun executeUpdate(sql: String, value: Boolean, id: Int) {
+
+    override suspend fun delete(bookId: Int): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            println("DatabaseManager: deleting book with id: $bookId")
+            DriverManager.getConnection(url, user, pass).use { conn ->
+                val sql = "DELETE FROM ${Consts.EBOOK_TBL} WHERE id = ?"
+                conn.prepareStatement(sql).use { pstmt ->
+                    pstmt.setInt(1, bookId)
+                    pstmt.executeUpdate()
+                }
+            }
+        }
+    }
+
+    private fun executeUpdate(sql: String, value: Boolean, id: Int): Result<Unit> {
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
                 conn.prepareStatement(sql).use { pstmt ->
@@ -123,9 +143,11 @@ class DatabaseManager : RemoteDataSource {
                     pstmt.setInt(2, id)
                     pstmt.executeUpdate()
                 }
+
+                return Result.success(Unit)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            return Result.failure(e)
         }
     }
 }

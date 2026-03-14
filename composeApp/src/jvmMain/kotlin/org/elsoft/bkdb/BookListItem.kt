@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ fun BookListItem(book: EBook) {
 
     Card(
         modifier = Modifier
+            .background(backgroundColor)
             .fillMaxWidth()
             .padding(vertical = 2.dp, horizontal = 8.dp)
             .clickable { isExpanded = !isExpanded },
@@ -161,9 +163,21 @@ fun BookListItem(book: EBook) {
                         Spacer(Modifier.width(4.dp))
                         Text("Edit")
                     }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    TextButton(
+                        onClick = { vm.confirmDeletion(book) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Delete")
+                    }
                 }
 
-                Row() {
+
+                Row {
                     Text(
                         text = "LOCATION:  ",
                         style = MaterialTheme.typography.labelSmall,

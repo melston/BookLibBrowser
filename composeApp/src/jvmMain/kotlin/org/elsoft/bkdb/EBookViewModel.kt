@@ -1,5 +1,8 @@
 package org.elsoft.bkdb
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -98,6 +101,17 @@ class EBookViewModel : ViewModel() {
         .map { repository.isOnline() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), true)
 
+    var bookToDelete by mutableStateOf<EBook?>(null)
+        private set
+
+    fun confirmDeletion(book: EBook) {
+        bookToDelete = book
+    }
+
+    fun cancelDeletion() {
+        bookToDelete = null
+    }
+
     /**
      * This is a <code>List&lt;EBook&gt;</code> containing all of the books in the
      * repository after applying any selected filters.
@@ -147,7 +161,7 @@ class EBookViewModel : ViewModel() {
 
     // Derive stats from the existing flows
     val libraryStats: StateFlow<String> = filteredBooks.map { books ->
-        "Showing ${filteredBooks.value.size} of ${allBooks.value.size} books"
+        "Showing ${books.size} of ${allBooks.value.size} books"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     init {
@@ -173,7 +187,7 @@ class EBookViewModel : ViewModel() {
                 val categories = repository.getCategories()
 
                 // Update the UI state
-                _allBooks.value = books
+                _allBooks.value = books.toList()
                 _allCategories.value = categories
             } catch (e: Exception) {
                 _uiEvents.send("Database error: ${e.message}")
@@ -246,6 +260,24 @@ class EBookViewModel : ViewModel() {
                 stopEditing()
             } catch (e: Exception) {
                 _uiEvents.send("Error saving description: ${e.message}")
+            }
+        }
+    }
+
+    fun performDeletion() {
+        bookToDelete?.let { book ->
+            viewModelScope.launch {
+                repository.removeBookWithId(book.id)
+                    .onSuccess {
+                        _uiEvents.send("Deleted duplicate: ${book.filePath}")
+                        // Refresh the list to remove the duplicate from view
+                        refreshBooks()
+                    }
+                    .onFailure { t ->
+                        _uiEvents.send("Failed to delete ${book.filePath} from Library.\n" +
+                        t.message)
+                    }
+                bookToDelete = null
             }
         }
     }

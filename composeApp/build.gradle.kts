@@ -13,6 +13,8 @@ kotlin {
     jvm()
     sourceSets {
         commonMain.dependencies {
+            implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

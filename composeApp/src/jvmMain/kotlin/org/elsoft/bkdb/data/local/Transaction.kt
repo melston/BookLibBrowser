@@ -29,5 +29,6 @@ data class Transaction(
 enum class TransactionType {
     TOGGLE_READ,
     TOGGLE_FAVORITE,
-    UPDATE_DESCRIPTION
+    UPDATE_DESCRIPTION,
+    DELETE_BOOK
 }

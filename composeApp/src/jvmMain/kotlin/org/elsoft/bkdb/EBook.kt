@@ -15,7 +15,7 @@ data class EBook(
     val title: String,
     val author: String,
     val pubID: String?,
-    val filePath: String, // The absolute path on your Linux system
+    val filePath: String,
     val isRead: Boolean,
     val isFavorite: Boolean,
     val category: Int,
@@ -36,7 +36,7 @@ fun EBookApp() {
     }
 }
 
-suspend fun openEBook(filePath: String): Result<Unit> {
+fun openEBook(filePath: String): Result<Unit> {
     val customCommand = ConfigManager.get(ConfigManager.viewer_command, "")
 
     return try {

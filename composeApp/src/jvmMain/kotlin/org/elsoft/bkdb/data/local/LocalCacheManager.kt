@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken
 import org.elsoft.bkdb.Category
 import org.elsoft.bkdb.EBook
 import java.io.File
+import kotlin.collections.forEach
 
 class LocalCacheManager(private val cacheDir: File): LocalDataSource {
     private val cacheFile = File(cacheDir, "library_cache.json")
@@ -45,7 +46,7 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
 
             // Replay travel edits on top of the old snapshot
             applyPendingTransactions(baseList)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -53,7 +54,7 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
     override fun logTransaction(tx: Transaction) {
         val transactions = getPendingTransactions().toMutableList()
         transactions.add(tx)
-        transactionFile.writeText(gson.toJson(transactions))
+        writeTransactions(transactions)
     }
 
     override fun getPendingTransactions(): List<Transaction> {
@@ -63,7 +64,7 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
             val json = transactionFile.readText()
             val type = object : TypeToken<List<Transaction>>() {}.type
             gson.fromJson(json, type) ?: emptyList()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -94,14 +95,19 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
         pending.forEach { tx ->
             val book = bookMap[tx.bookId]
             if (book != null) {
-                bookMap[tx.bookId] = when (tx.type) {
-                    TransactionType.TOGGLE_READ -> book.copy(isRead = tx.newValue.toBoolean())
-                    TransactionType.TOGGLE_FAVORITE -> book.copy(isFavorite = tx.newValue.toBoolean())
-                    TransactionType.UPDATE_DESCRIPTION -> book.copy(description = tx.newValue)
+                when (tx.type) {
+                    TransactionType.TOGGLE_READ ->
+                        bookMap[tx.bookId] = book.copy(isRead = tx.newValue.toBoolean())
+                    TransactionType.TOGGLE_FAVORITE ->
+                        bookMap[tx.bookId] =book.copy(isFavorite = tx.newValue.toBoolean())
+                    TransactionType.UPDATE_DESCRIPTION ->
+                        bookMap[tx.bookId] =book.copy(description = tx.newValue)
+                    TransactionType.DELETE_BOOK ->
+                        bookMap.remove(tx.bookId)
                 }
             }
         }
-        return bookMap.values.toList()
+        return bookMap.values.toList().sortedBy { it.title }
     }
 
     override fun updateLastSyncTimestamp() {
@@ -118,4 +124,13 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
         return getPendingTransactions().size
     }
 
+    override fun removeTransaction(id: String) {
+        val transactions = getPendingTransactions()
+            .filter { it.id != id } // Remove only the tx with the given id value
+        writeTransactions(transactions)
+    }
+
+    private fun writeTransactions(txs: List<Transaction>) {
+        transactionFile.writeText(gson.toJson(txs))
+    }
 }

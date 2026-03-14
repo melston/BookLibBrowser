@@ -214,6 +214,37 @@ fun MainScreen() {
                     }
                 )
             }
+
+            if (vm.bookToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { vm.cancelDeletion() },
+                    title = { Text("Delete Book?") },
+                    text = {
+                        Column {
+                            Text("This will remove the entry from your library, including DropBox.")
+                            Text(
+                                text = "File: ${vm.bookToDelete?.filePath}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { vm.performDeletion() },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("Delete")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { vm.cancelDeletion() }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
         }
     }
 
