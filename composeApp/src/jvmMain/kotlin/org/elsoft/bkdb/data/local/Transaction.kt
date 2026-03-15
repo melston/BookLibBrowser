@@ -30,5 +30,7 @@ enum class TransactionType {
     TOGGLE_READ,
     TOGGLE_FAVORITE,
     UPDATE_DESCRIPTION,
+    UPDATE_TITLE,
+    UPDATE_AUTHOR,
     DELETE_BOOK
 }

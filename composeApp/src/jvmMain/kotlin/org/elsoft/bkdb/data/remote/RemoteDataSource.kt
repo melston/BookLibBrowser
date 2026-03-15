@@ -10,5 +10,7 @@ interface RemoteDataSource {
     suspend fun updateReadStatus(bookId: Int, isRead: Boolean): Result<Unit>
     suspend fun updateFavoriteStatus(bookId: Int, isFavorite: Boolean): Result<Unit>
     suspend fun updateDescription(bookId: Int, description: String?): Result<Unit>
+    suspend fun updateTitle(bookId: Int, title: String): Result<Unit>
+    suspend fun updateAuthor(bookId: Int, authorName: String): Result<Unit>
     suspend fun delete(bookId: Int): Result<Int>
 }

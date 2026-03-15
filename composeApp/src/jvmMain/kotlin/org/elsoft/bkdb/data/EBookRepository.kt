@@ -16,13 +16,13 @@ class EBookRepository(
         return remoteSource.isAvailable()
     }
 
-//    fun lastSyncTimeStamp(): Long {
-//        return localSource.getLastSyncTimestamp()
-//    }
-//
-//    fun getPendingTransactionCount(): Int {
-//        return localSource.getPendingTransactionCount()
-//    }
+    fun lastSyncTimeStamp(): Long {
+        return localSource.getLastSyncTimestamp()
+    }
+
+    fun getPendingTransactionCount(): Int {
+        return localSource.getPendingTransactionCount()
+    }
 
     suspend fun getBooks(): List<EBook> {
         return if (remoteSource.isAvailable()) {
@@ -60,6 +60,10 @@ class EBookRepository(
                     remoteSource.updateReadStatus(tx.bookId, tx.newValue.toBoolean())
                 TransactionType.TOGGLE_FAVORITE ->
                     remoteSource.updateFavoriteStatus(tx.bookId, tx.newValue.toBoolean())
+                TransactionType.UPDATE_TITLE ->
+                    remoteSource.updateTitle(tx.bookId, tx.newValue)
+                TransactionType.UPDATE_AUTHOR ->
+                    remoteSource.updateAuthor(tx.bookId, tx.newValue)
                 TransactionType.UPDATE_DESCRIPTION ->
                     remoteSource.updateDescription(tx.bookId, tx.newValue)
                 TransactionType.DELETE_BOOK ->
@@ -119,15 +123,28 @@ class EBookRepository(
         }
     }
 
-    suspend fun updateDescription(bookId: Int, description: String?) {
-        if (remoteSource.isAvailable()) {
-            remoteSource.updateDescription(bookId, description)
+    suspend fun handleTransaction(tx: Transaction): Result<Unit> {
+        return if (remoteSource.isAvailable()) {
+            // Execute immediately against MySQL
+            val result = when (tx.type) {
+                TransactionType.UPDATE_TITLE ->
+                    remoteSource.updateTitle(tx.bookId, tx.newValue)
+                TransactionType.UPDATE_AUTHOR ->
+                    remoteSource.updateAuthor(tx.bookId, tx.newValue)
+                TransactionType.UPDATE_DESCRIPTION ->
+                    remoteSource.updateDescription(tx.bookId, tx.newValue)
+                TransactionType.TOGGLE_READ ->
+                    remoteSource.updateReadStatus(tx.bookId, tx.newValue.toBoolean())
+                TransactionType.TOGGLE_FAVORITE ->
+                    remoteSource.updateFavoriteStatus(tx.bookId, tx.newValue.toBoolean())
+                TransactionType.DELETE_BOOK ->
+                    removeBookWithId(tx.bookId) // assuming remotePath is passed
+            }
+            result
         } else {
-            // Note: Use an empty string or specific token if description is null
-            localSource.logTransaction(
-                Transaction(bookId = bookId,
-                    type = TransactionType.UPDATE_DESCRIPTION,
-                    newValue = description ?: ""))
+            // Queue it for later
+            localSource.logTransaction(tx)
+            Result.success(Unit)
         }
     }
 

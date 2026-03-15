@@ -44,6 +44,7 @@ fun MainScreen() {
     val searchQuery by vm.searchQuery.collectAsState()
     var showAboutDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val editingBook by vm.editingBook.collectAsState()
 
     // Initial tab
     var selectedTab by remember { mutableStateOf<LibraryTab>(LibraryTab.ByTitle) }
@@ -163,6 +164,20 @@ fun MainScreen() {
                         )
                     }
 
+                    Text(
+                        text = vm.lastSyncTime.value,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(Modifier.width(4.dp))
+
+                    Text(
+                        text = vm.pendingTransactions.value,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
                     val onlineTooltip = when(online) {
                         true -> "Online"
                         false -> "Offline"
@@ -204,12 +219,13 @@ fun MainScreen() {
                 }
             }
 
-            if (vm.editingBook.value != null) {
-                DescriptionEditDialog(
-                    book = vm.editingBook.value!!,
+            if (editingBook != null) {
+                println("Editing book!")
+                BookEditDialog(
+                    book = editingBook!!,
                     onDismiss = { vm.stopEditing() },
-                    onConfirm = { newDesc ->
-                        vm.updateDescription(vm.editingBook.value!!, newDesc)
+                    onSave = { newTitle, newAuthor, newDesc ->
+                        vm.updateBookMetadata(editingBook!!, newTitle, newAuthor, newDesc)
                         vm.stopEditing()
                     }
                 )

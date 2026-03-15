@@ -102,6 +102,10 @@ class LocalCacheManager(private val cacheDir: File): LocalDataSource {
                         bookMap[tx.bookId] =book.copy(isFavorite = tx.newValue.toBoolean())
                     TransactionType.UPDATE_DESCRIPTION ->
                         bookMap[tx.bookId] =book.copy(description = tx.newValue)
+                    TransactionType.UPDATE_AUTHOR ->
+                        bookMap[tx.bookId] =book.copy(author = tx.newValue)
+                    TransactionType.UPDATE_TITLE ->
+                        bookMap[tx.bookId] =book.copy(title = tx.newValue)
                     TransactionType.DELETE_BOOK ->
                         bookMap.remove(tx.bookId)
                 }

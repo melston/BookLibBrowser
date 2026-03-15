@@ -12,8 +12,13 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.elsoft.bkdb.data.EBookRepository
 import org.elsoft.bkdb.data.local.LocalCacheManager
+import org.elsoft.bkdb.data.local.Transaction
+import org.elsoft.bkdb.data.local.TransactionType
 import org.elsoft.bkdb.data.remote.DatabaseManager
 import org.elsoft.bkdb.utils.Platform
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 enum class ReadFilter { ALL, UNREAD, READ }
 
@@ -74,28 +79,25 @@ class EBookViewModel : ViewModel() {
         _isSyncing.value = boolean
     }
 
-    // This may need to change.  If refreshBooks causes the sync state to
-    // differ then the timestamp and count need to be Flows from the
-    // Repository to trigger a change to the syncStatus.
-//    val syncStatus: StateFlow<String> = flow {
-//        // 1. Fetch the data once
-//        val timestamp = repository.lastSyncTimeStamp()
-//        val count = repository.getPendingTransactionCount()
-//
-//        // 2. Do the formatting logic
-//        val dateStr = if (timestamp == 0L) "Never" else {
-//            java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
-//                .format(java.util.Date(timestamp))
-//        }
-//        val pendingStr = if (count > 0) "\nPending Changes: $count" else ""
-//
-//        // 3. Emit the final string
-//        emit("Last Home Sync: $dateStr$pendingStr")
-//    }.stateIn(
-//        scope = viewModelScope,
-//        started = SharingStarted.Lazily, // Only runs when the UI actually looks at it
-//        initialValue = "Checking sync..."
-//    )
+    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        .withZone(ZoneId.systemDefault())
+    private fun formatLastSyncTimestamp(timestamp: Long): String {
+        val formattedDate = dateFormatter.format(Instant.ofEpochMilli(timestamp))
+        return "Last Sync: $formattedDate"
+    }
+    private fun formatPendingTransactions(numTransactions: Int): String {
+        return "$numTransactions Pending Transactions"
+    }
+
+    val _lastSyncTime = MutableStateFlow(
+        formatLastSyncTimestamp(repository.lastSyncTimeStamp())
+    )
+    val lastSyncTime: StateFlow<String> = _lastSyncTime.asStateFlow()
+
+    val _pendingTransactions = MutableStateFlow(
+        formatPendingTransactions(repository.getPendingTransactionCount())
+    )
+    val pendingTransactions: StateFlow<String> = _pendingTransactions.asStateFlow()
 
     val isOnline: StateFlow<Boolean> = snapshotFlow { isSyncing }
         .map { repository.isOnline() }
@@ -174,6 +176,13 @@ class EBookViewModel : ViewModel() {
         setReadFilter(ReadFilter.ALL)
     }
 
+    fun updateSyncUI() {
+        val timestamp = repository.lastSyncTimeStamp()
+        val pendingTransactions = repository.getPendingTransactionCount()
+        _lastSyncTime.value = formatLastSyncTimestamp(timestamp)
+        _pendingTransactions.value = formatPendingTransactions(pendingTransactions)
+    }
+
     fun refreshBooks() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -189,6 +198,8 @@ class EBookViewModel : ViewModel() {
                 // Update the UI state
                 _allBooks.value = books.toList()
                 _allCategories.value = categories
+
+                updateSyncUI()
             } catch (e: Exception) {
                 _uiEvents.send("Database error: ${e.message}")
             } finally {
@@ -244,26 +255,6 @@ class EBookViewModel : ViewModel() {
         setEditingBook(null)
     }
 
-    fun updateDescription(book: EBook, newDesc: String?) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // 1. Database Update
-                repository.updateDescription(book.id, newDesc)
-
-                // 2. UI State Update
-                _allBooks.update { currentList ->
-                    currentList.map {
-                        if (it.id == book.id) it.copy(description = newDesc) else it
-                    }
-                }
-                // 3. Close the dialog
-                stopEditing()
-            } catch (e: Exception) {
-                _uiEvents.send("Error saving description: ${e.message}")
-            }
-        }
-    }
-
     fun performDeletion() {
         bookToDelete?.let { book ->
             viewModelScope.launch {
@@ -275,10 +266,41 @@ class EBookViewModel : ViewModel() {
                     }
                     .onFailure { t ->
                         _uiEvents.send("Failed to delete ${book.filePath} from Library.\n" +
-                        t.message)
+                                t.message)
                     }
                 bookToDelete = null
             }
         }
+    }
+
+    fun updateBookMetadata(book: EBook, newTitle: String, newAuthor: String, newDesc: String?) {
+        viewModelScope.launch {
+            // 1. Check Title
+            if (newTitle != book.title) {
+                logAndExecute(book.id, TransactionType.UPDATE_TITLE, newTitle)
+            }
+
+            // 2. Check Author
+            if (newAuthor != book.author) {
+                logAndExecute(book.id, TransactionType.UPDATE_AUTHOR, newAuthor)
+            }
+
+            // 3. Check Description (handling the null safety)
+            val currentDesc = book.description ?: ""
+            val incomingDesc = newDesc ?: ""
+            if (incomingDesc != currentDesc) {
+                logAndExecute(book.id, TransactionType.UPDATE_DESCRIPTION, incomingDesc)
+            }
+
+            // Refresh to show updates immediately if online
+            refreshBooks()
+        }
+    }
+
+    // Helper to keep the code DRY
+    private suspend fun logAndExecute(bookId: Int, type: TransactionType, value: String) {
+        repository.handleTransaction(
+            Transaction(bookId = bookId, type = type, newValue = value)
+        )
     }
 }

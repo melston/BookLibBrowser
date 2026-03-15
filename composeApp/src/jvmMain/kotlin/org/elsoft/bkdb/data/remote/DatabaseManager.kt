@@ -103,6 +103,42 @@ class DatabaseManager : RemoteDataSource {
         return executeUpdate("UPDATE ${Consts.EBOOK_TBL} SET is_favorite = ? WHERE id = ?", isFavorite, bookId)
     }
 
+    override suspend fun updateTitle(bookId: Int, title: String): Result<Unit> {
+        try {
+            DriverManager.getConnection(url, user, pass).use { conn ->
+                val sql = "UPDATE ${Consts.EBOOK_TBL} SET title = ? WHERE id = ?"
+                conn.prepareStatement(sql).use { pstmt ->
+                    // MySQL handles nulls correctly if passed via setString
+                    pstmt.setString(1, title)
+                    pstmt.setInt(2, bookId)
+                    pstmt.executeUpdate()
+                }
+
+                return Result.success(Unit)
+            }
+        } catch (e: Exception) {
+            return Result.failure(e)
+        }
+    }
+
+    override suspend fun updateAuthor(bookId: Int, authorName: String): Result<Unit> {
+        try {
+            DriverManager.getConnection(url, user, pass).use { conn ->
+                val sql = "UPDATE ${Consts.EBOOK_TBL} SET author = ? WHERE id = ?"
+                conn.prepareStatement(sql).use { pstmt ->
+                    // MySQL handles nulls correctly if passed via setString
+                    pstmt.setString(1, authorName)
+                    pstmt.setInt(2, bookId)
+                    pstmt.executeUpdate()
+                }
+
+                return Result.success(Unit)
+            }
+        } catch (e: Exception) {
+            return Result.failure(e)
+        }
+    }
+
     override suspend fun updateDescription(bookId: Int, description: String?): Result<Unit> {
         try {
             DriverManager.getConnection(url, user, pass).use { conn ->
@@ -120,7 +156,6 @@ class DatabaseManager : RemoteDataSource {
             return Result.failure(e)
         }
     }
-
 
     override suspend fun delete(bookId: Int): Result<Int> = withContext(Dispatchers.IO) {
         runCatching {
