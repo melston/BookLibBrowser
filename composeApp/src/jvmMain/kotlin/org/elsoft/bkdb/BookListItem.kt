@@ -167,7 +167,7 @@ fun BookListItem(book: EBook) {
                     Spacer(Modifier.width(8.dp))
 
                     TextButton(
-                        onClick = { vm.confirmDeletion(book) },
+                        onClick = { vm.startDeleteConfirmation(book) },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
                         Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))

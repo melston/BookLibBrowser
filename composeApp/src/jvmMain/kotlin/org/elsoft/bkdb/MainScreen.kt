@@ -44,7 +44,7 @@ fun MainScreen() {
     val searchQuery by vm.searchQuery.collectAsState()
     var showAboutDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val editingBook by vm.editingBook.collectAsState()
+    val syncing by vm.isSyncing.collectAsState() // Correctly observing the state
 
     // Initial tab
     var selectedTab by remember { mutableStateOf<LibraryTab>(LibraryTab.ByTitle) }
@@ -141,7 +141,7 @@ fun MainScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (vm.isSyncing.value) {
+                    if (syncing) {
                         // Show spinning indicator while syncing
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(
@@ -205,61 +205,66 @@ fun MainScreen() {
         },
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
+            val uiState by vm.uiState.collectAsState()
             val filteredBooks by vm.filteredBooks.collectAsState()
             val allBooks by vm.allBooks.collectAsState()
 
-            // 1. Check if the library has data but the current filter killed all results
+            // 1. Content Layer
             if (allBooks.isNotEmpty() && filteredBooks.isEmpty()) {
                 EmptyLibraryState(onReset = { vm.resetAllFilters() })
             } else {
-                // 2. Normal View: Show the tabs as usual
                 when (selectedTab) {
                     is LibraryTab.ByTitle -> TitleListView()
                     is LibraryTab.ByAuthor -> AuthorListView()
                 }
             }
 
-            if (editingBook != null) {
-                println("Editing book!")
-                BookEditDialog(
-                    book = editingBook!!,
-                    onDismiss = { vm.stopEditing() },
-                    onSave = { newTitle, newAuthor, newDesc ->
-                        vm.updateBookMetadata(editingBook!!, newTitle, newAuthor, newDesc)
-                        vm.stopEditing()
-                    }
-                )
-            }
+            // 2. Dialog Layer (The "Switchboard")
+            when (val state = uiState) {
+                is LibraryUiState.Syncing -> {
 
-            if (vm.bookToDelete != null) {
-                AlertDialog(
-                    onDismissRequest = { vm.cancelDeletion() },
-                    title = { Text("Delete Book?") },
-                    text = {
-                        Column {
-                            Text("This will remove the entry from your library, including DropBox.")
-                            Text(
-                                text = "File: ${vm.bookToDelete?.filePath}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
+                }
+                is LibraryUiState.Editing -> {
+                    BookEditDialog(
+                        book = state.book,
+                        onDismiss = { vm.resetUiState() },
+                        onSave = { title, author, desc ->
+                            vm.updateBookMetadata(state.book, title, author, desc)
+                            vm.resetUiState()
                         }
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = { vm.performDeletion() },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text("Delete")
+                    )
+                }
+                is LibraryUiState.ConfirmDelete -> {
+                    AlertDialog(
+                        onDismissRequest = { vm.resetUiState() },
+                        title = { Text("Delete Book?") },
+                        text = {
+                            Column {
+                                Text("This will remove the entry from your library, including DropBox.")
+                                Text(
+                                    text = "File: ${state.book.filePath}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = { vm.performDeletion() },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Delete")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { vm.resetUiState() }) {
+                                Text("Cancel")
+                            }
                         }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { vm.cancelDeletion() }) {
-                            Text("Cancel")
-                        }
-                    }
-                )
+                    )
+                }
+                LibraryUiState.Idle -> { /* Nothing to show */ }
             }
         }
     }
