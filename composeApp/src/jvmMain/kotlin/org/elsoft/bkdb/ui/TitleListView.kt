@@ -1,4 +1,4 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.ui
 
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.defaultScrollbarStyle
@@ -16,15 +16,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import org.elsoft.bkdb.LocalViewModel
 
 @Composable
 fun TitleListView() {
+    val vm = LocalViewModel.current
+
     // 1. Create the shared scroll state
     val state = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val vm = viewModel<EBookViewModel>()
     val books by vm.filteredBooks.collectAsState(initial = emptyList())
 
     val showButton by remember {

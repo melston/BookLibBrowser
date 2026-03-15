@@ -1,4 +1,4 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -15,17 +15,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import org.elsoft.bkdb.EBook
+import org.elsoft.bkdb.LocalViewModel
 
 @Composable
 fun AuthorListView() {
 
+    val vm = LocalViewModel.current
     // Track which authors are expanded
     val expandedAuthors = remember { mutableStateMapOf<String, Boolean>() }
     val state = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val vm = viewModel<EBookViewModel>()
     val groupedBooks by vm.booksByAuthor.collectAsState()
 
     val alphabet = ('A'..'Z').toList()

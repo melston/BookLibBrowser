@@ -1,9 +1,5 @@
 package org.elsoft.bkdb
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +12,7 @@ import org.elsoft.bkdb.data.local.LocalCacheManager
 import org.elsoft.bkdb.data.local.Transaction
 import org.elsoft.bkdb.data.local.TransactionType
 import org.elsoft.bkdb.data.remote.DatabaseManager
+import org.elsoft.bkdb.utils.DuplicateFinder
 import org.elsoft.bkdb.utils.Platform
 import java.time.Instant
 import java.time.ZoneId
@@ -30,7 +27,8 @@ class EBookViewModel : ViewModel() {
 
     val repository = EBookRepository(
         DatabaseManager(),
-        LocalCacheManager(Platform.getCacheDir()))
+        LocalCacheManager(Platform.getCacheDir())
+    )
 
     ////////////////////////////////////////////////////
     // Categories and filters
@@ -313,5 +311,16 @@ class EBookViewModel : ViewModel() {
         repository.handleTransaction(
             Transaction(bookId = bookId, type = type, newValue = value)
         )
+    }
+
+    fun showDuplicates() {
+        runWithSyncSignaling {
+            val allBooks = _allBooks.value
+            val duplicates = DuplicateFinder.findDuplicates(allBooks)
+
+            withContext(Dispatchers.Main) {
+                _uiState.value = LibraryUiState.DuplicateResults(duplicates)
+            }
+        }
     }
 }

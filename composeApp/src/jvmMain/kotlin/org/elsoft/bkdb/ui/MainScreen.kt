@@ -1,33 +1,22 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.rememberDialogState
+import org.elsoft.bkdb.LibraryUiState
+import org.elsoft.bkdb.LocalViewModel
+import org.elsoft.bkdb.ReadFilter
 
 sealed class LibraryTab(val title: String) {
     data object ByTitle : LibraryTab("By Title")
@@ -37,8 +26,9 @@ sealed class LibraryTab(val title: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
+    val vm = LocalViewModel.current
+
     val tabs = listOf(LibraryTab.ByTitle, LibraryTab.ByAuthor)
-    val vm = viewModel<EBookViewModel>()
     val stats by vm.libraryStats.collectAsState()
     val online by vm.isOnline.collectAsState()
     val searchQuery by vm.searchQuery.collectAsState()
@@ -72,14 +62,15 @@ fun MainScreen() {
                             // A simple icon button to cycle through filters
                             IconButton(onClick = {
                                 vm.setReadFilter(
-                                    when(vm.readFilter.value) {
+                                    when (vm.readFilter.value) {
                                         ReadFilter.ALL -> ReadFilter.UNREAD
                                         ReadFilter.UNREAD -> ReadFilter.READ
                                         ReadFilter.READ -> ReadFilter.ALL
-                                })
+                                    }
+                                )
                             }) {
                                 Icon(
-                                    imageVector = when(vm.readFilter.value) {
+                                    imageVector = when (vm.readFilter.value) {
                                         ReadFilter.ALL -> Icons.AutoMirrored.Filled.List
                                         ReadFilter.UNREAD -> Icons.Default.RadioButtonUnchecked
                                         ReadFilter.READ -> Icons.Default.CheckCircle
@@ -117,7 +108,7 @@ fun MainScreen() {
                 )
 
                 // Category Dropdown
-                CategoryDropdown(vm)
+                CategoryDropdown()
 
                 TabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
                     tabs.forEach { tab ->
@@ -221,9 +212,6 @@ fun MainScreen() {
 
             // 2. Dialog Layer (The "Switchboard")
             when (val state = uiState) {
-                is LibraryUiState.Syncing -> {
-
-                }
                 is LibraryUiState.Editing -> {
                     BookEditDialog(
                         book = state.book,
@@ -263,6 +251,26 @@ fun MainScreen() {
                             }
                         }
                     )
+                }
+                is LibraryUiState.DuplicateResults -> {
+                    Dialog(
+                        onCloseRequest = { vm.resetUiState() },
+                        title = "Potential Duplicates Found",
+                        state = rememberDialogState(width = 800.dp, height = 600.dp)
+                    ) {
+                        if (state.groups.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No duplicates found!")
+                            }
+                        } else {
+                            LazyColumn(Modifier.padding(16.dp)) {
+                                items(state.groups) { group ->
+                                    DuplicateGroupItem(group, onDelete = { vm.startDeleteConfirmation(it) })
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                                }
+                            }
+                        }
+                    }
                 }
                 LibraryUiState.Idle -> { /* Nothing to show */ }
             }

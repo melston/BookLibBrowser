@@ -1,11 +1,10 @@
 package org.elsoft.bkdb
 
 // Standard Java/Kotlin for Linux process execution
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import org.elsoft.bkdb.utils.Platform
 import org.elsoft.bkdb.utils.ConfigManager
 import org.elsoft.bkdb.utils.DropboxService
-import org.elsoft.bkdb.utils.Platform
+
 import java.io.File
 
 data class Category(val id: Int, val name: String)
@@ -21,20 +20,6 @@ data class EBook(
     val category: Int,
     val description: String?,
 )
-
-@Composable
-fun EBookApp() {
-    var isConfigured by remember { mutableStateOf(ConfigManager.isConfigured()) }
-
-    MaterialTheme {
-        if (!isConfigured) {
-            SetupScreen(onConfigSaved = { isConfigured = true })
-        } else {
-            // Your existing Library UI (Tabs, List, etc.)
-            MainScreen()
-        }
-    }
-}
 
 fun openEBook(filePath: String): Result<Unit> {
     val customCommand = ConfigManager.get(ConfigManager.viewer_command, "")

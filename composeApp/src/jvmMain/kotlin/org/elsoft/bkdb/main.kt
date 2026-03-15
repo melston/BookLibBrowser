@@ -1,14 +1,21 @@
 package org.elsoft.bkdb
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
+import org.elsoft.bkdb.ui.EBookApp
 import java.awt.GraphicsEnvironment
 import java.io.File
 import java.util.Properties
+
+val LocalViewModel = staticCompositionLocalOf<EBookViewModel> {
+    error("No ViewModel provided")
+}
 
 fun main() = application {
     // 1. Load the saved state from a local file
@@ -51,7 +58,19 @@ fun main() = application {
         state = windowState,
         title = "EBook Manager"
     ) {
-        EBookApp()
+        val vm = EBookViewModel()
+        CompositionLocalProvider(LocalViewModel provides vm) {
+            MenuBar {
+                Menu("File") {
+                    Item("Refresh", onClick = { vm.refreshBooks() })
+                    Item("Exit", onClick = ::exitApplication)
+                }
+                Menu("Tools") {
+                    Item("Find Duplicates", onClick = { vm.showDuplicates() })
+                }
+            }
+            EBookApp()
+        }
     }
 }
 

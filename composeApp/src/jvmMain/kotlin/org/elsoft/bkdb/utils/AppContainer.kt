@@ -1,8 +1,8 @@
 package org.elsoft.bkdb.utils
 
-import org.elsoft.bkdb.data.remote.DatabaseManager
 import org.elsoft.bkdb.data.EBookRepository
 import org.elsoft.bkdb.data.local.LocalCacheManager
+import org.elsoft.bkdb.data.remote.DatabaseManager
 
 object AppContainer {
     // DatabaseManager implements RemoteDataSource

@@ -1,4 +1,4 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

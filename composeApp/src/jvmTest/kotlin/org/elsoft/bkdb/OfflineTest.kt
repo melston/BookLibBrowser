@@ -1,21 +1,14 @@
 package org.elsoft.bkdb
 
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import org.elsoft.bkdb.data.EBookRepository
-import org.elsoft.bkdb.data.local.LocalCacheManager
-import org.elsoft.bkdb.data.local.LocalDataSource
 import org.elsoft.bkdb.data.local.Transaction
-import org.elsoft.bkdb.data.remote.RemoteDataSource
-import org.elsoft.bkdb.utils.Platform
-import kotlin.test.DefaultAsserter.assertTrue
 import kotlin.test.Test
 
 
 class OfflineTest {
     @Test
     fun `test offline fallback when remote is disconnected`() = runBlocking {
-        val mockRemote = object : RemoteDataSource {
+        val mockRemote = object : `RemoteDataSource.kt` {
             override suspend fun isAvailable() = false // Simulate hotel WiFi failure
             override suspend fun updateReadStatus(bookId: Int, isRead: Boolean) {
                 TODO("Not yet implemented")
@@ -49,7 +42,7 @@ class OfflineTest {
             }
         }
 
-        val repo = EBookRepository(
+        val repo = `EBookRepository.kt`(
             mockRemote,
             localCache)
         val books = repo.getBooks()

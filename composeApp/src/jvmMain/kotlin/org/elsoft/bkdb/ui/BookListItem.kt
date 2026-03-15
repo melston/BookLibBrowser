@@ -1,4 +1,4 @@
-package org.elsoft.bkdb
+package org.elsoft.bkdb.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,17 +21,19 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.elsoft.bkdb.EBook
+import org.elsoft.bkdb.LocalViewModel
 
 @Composable
 fun BookListItem(book: EBook) {
+    val vm = LocalViewModel.current
+
     // Define background color based on status
     val backgroundColor = when {
         book.isFavorite && book.isRead -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         book.isRead -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         else -> MaterialTheme.colorScheme.surface
     }
-    val vm = viewModel<EBookViewModel>()
     var isExpanded by remember { mutableStateOf(false) }
 
     // Animation for the expansion arrow
