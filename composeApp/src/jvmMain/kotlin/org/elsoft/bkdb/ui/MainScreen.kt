@@ -1,8 +1,11 @@
 package org.elsoft.bkdb.ui
 
+import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -35,6 +38,7 @@ fun MainScreen() {
     var showAboutDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val syncing by vm.isSyncing.collectAsState() // Correctly observing the state
+    val duplicateDialogListState = rememberLazyListState()
 
     // Initial tab
     var selectedTab by remember { mutableStateOf<LibraryTab>(LibraryTab.ByTitle) }
@@ -253,24 +257,12 @@ fun MainScreen() {
                     )
                 }
                 is LibraryUiState.DuplicateResults -> {
-                    Dialog(
-                        onCloseRequest = { vm.resetUiState() },
-                        title = "Potential Duplicates Found",
-                        state = rememberDialogState(width = 800.dp, height = 600.dp)
-                    ) {
-                        if (state.groups.isEmpty()) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("No duplicates found!")
-                            }
-                        } else {
-                            LazyColumn(Modifier.padding(16.dp)) {
-                                items(state.groups) { group ->
-                                    DuplicateGroupItem(group, onDelete = { vm.startDeleteConfirmation(it) })
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                                }
-                            }
-                        }
-                    }
+                    DuplicateDialog(
+                        state = state,
+                        listState = duplicateDialogListState, // Pass the hoisted state in
+                        onClose = { vm.resetUiState() },
+                        onDelete = { vm.startDeleteConfirmation(it) }
+                    )
                 }
                 LibraryUiState.Idle -> { /* Nothing to show */ }
             }

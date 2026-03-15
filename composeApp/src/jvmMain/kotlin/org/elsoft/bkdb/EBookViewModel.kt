@@ -264,6 +264,8 @@ class EBookViewModel : ViewModel() {
         }
     }
 
+    private var lastDuplicateResults: LibraryUiState.DuplicateResults? = null
+
     fun performDeletion() {
         val state = _uiState.value
         if (state is LibraryUiState.ConfirmDelete) {
@@ -272,12 +274,29 @@ class EBookViewModel : ViewModel() {
                 repository.removeBookWithId(book.id)
                     .onSuccess {
                         _uiEvents.send("Deleted duplicate: ${book.filePath}")
+
+                        val previousResults = lastDuplicateResults
+                        if (previousResults != null) {
+                            // 1. Create the updated set of deleted IDs
+                            val updatedDeletedIds = previousResults.deletedIds + book.id
+
+                            // 2. Create the updated state
+                            val nextState = previousResults.copy(deletedIds = updatedDeletedIds)
+
+                            // 3. IMPORTANT: Update our reference so the NEXT delete builds on this one
+                            lastDuplicateResults = nextState
+
+                            // 4. Push to UI
+                            _uiState.value = nextState
+                        } else {
+                            resetUiState()
+                        }
                         refreshBooks()
                     }
                     .onFailure { t ->
                         _uiEvents.send("Failed to delete ${book.filePath}: ${t.message}")
+                        resetUiState() // Close the dialog
                     }
-                resetUiState() // Close the dialog
             }
         }
     }
@@ -315,8 +334,13 @@ class EBookViewModel : ViewModel() {
 
     fun showDuplicates() {
         runWithSyncSignaling {
-            val allBooks = _allBooks.value
-            val duplicates = DuplicateFinder.findDuplicates(allBooks)
+            val checkedBooks = _allBooks.value // _allBooks.value
+            val duplicates = DuplicateFinder.findDuplicates(checkedBooks)
+
+            val state = LibraryUiState.DuplicateResults(duplicates)
+
+            // Save the reference for the tombstone logic
+            lastDuplicateResults = state
 
             withContext(Dispatchers.Main) {
                 _uiState.value = LibraryUiState.DuplicateResults(duplicates)
