@@ -115,8 +115,9 @@ class EBookViewModel : ViewModel() {
     val booksByAuthor: StateFlow<Map<String, List<EBook>>> = filteredBooks
         .map { books ->
             books.groupBy { it.author }
-                .toSortedMap()
-                .mapValues { it.value.sortedBy { it.title } }
+                .toSortedMap(String.CASE_INSENSITIVE_ORDER)
+                .mapValues { entry ->
+                    entry.value.sortedBy { it.title } }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     ////////////////////////////////////////////////////

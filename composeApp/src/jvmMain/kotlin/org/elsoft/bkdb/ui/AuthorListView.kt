@@ -94,7 +94,10 @@ fun AuthorListView() {
 
                     // Indented Book Items (only if expanded)
                     if (isExpanded) {
-                        items(authorBooks) { book ->
+                        items(
+                            items = authorBooks,
+                            key = { it.id } // Ties the UI to the ID, not the index.
+                        ) { book ->
                             Box(modifier = Modifier.padding(start = 32.dp, end = 8.dp, top = 2.dp, bottom = 2.dp)) {
                                 BookListItem(book)
                             }

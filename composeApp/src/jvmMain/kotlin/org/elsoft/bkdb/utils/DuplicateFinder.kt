@@ -11,18 +11,27 @@ object DuplicateFinder {
             if (books[i].id in processed) continue
 
             val group = mutableListOf(books[i])
-            val title1 = normalize(books[i].title)
+
+
+            // 1. Get extension (e.g., "pdf", "epub")
+            val bookA = books[i]
+            val extA = bookA.filePath.substringAfterLast('.', "").lowercase()
+            val titleA = normalize(bookA.title)
 
             for (j in i + 1 until books.size) {
-                if (books[j].id in processed) continue
+                val bookB = books[j]
 
-                val title2 = normalize(books[j].title)
+                // 1. Get extension (e.g., "pdf", "epub")
+                val extB = bookB.filePath.substringAfterLast('.', "").lowercase()
 
-                // Check if one starts with the other, or they are fuzzy-similar
-                if (title1.startsWith(title2) || title2.startsWith(title1) ||
-                    similarity(title1, title2) > threshold) {
-//                    println("Duplicate $title1/$title2")
-                    group.add(books[j])
+                // 2. Only compare if the extensions are identical
+                if (extA != extB) continue
+
+                val titleB = normalize(bookB.title)
+
+                if (titleA.startsWith(titleB) || titleB.startsWith(titleA) ||
+                    similarity(titleA, titleB) > threshold) {
+                    group.add(bookB)
                 }
             }
 
@@ -36,6 +45,7 @@ object DuplicateFinder {
 
     private fun normalize(title: String): String {
         return title.lowercase()
+            .replace(Regex("\\.pdf$|\\.epub$|\\.mobi$"), "") // Strip extensions first
             .replace(Regex("[^a-z0-9]"), "") // Remove punctuation/spaces
             .replace(Regex("edition$|manning$|v[0-9]$"), "") // Strip common suffixes
             .trim()
